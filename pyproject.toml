@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macwhisper-mcp-server"
+version = "0.1.0"
+description = "Local MCP server exposing MacWhisper transcription to Claude Desktop."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Thomas" }]
+keywords = ["mcp", "macwhisper", "transcription", "claude", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "fastmcp==3.2.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+macwhisper-mcp = "macwhisper_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/thomas/macwhisper-mcp-server"
+Issues = "https://github.com/thomas/macwhisper-mcp-server/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"

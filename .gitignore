@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Linting
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Env / secrets
+.env
+.env.local
+*.log
+
+# Claude / agent config
+.claude/
+CLAUDE.local.md
+
+# Test fixtures (audio files can be large)
+tests/fixtures/*.m4a
+tests/fixtures/*.mp3
+tests/fixtures/*.wav
+!tests/fixtures/.gitkeep
