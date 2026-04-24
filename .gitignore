@@ -72,3 +72,4 @@ tests/fixtures/*.mp3
 tests/fixtures/*.wav
 !tests/fixtures/.gitkeep
 !tests/fixtures/sample.wav
+!tests/fixtures/tears_in_rain.wav
