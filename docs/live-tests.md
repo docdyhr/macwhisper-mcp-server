@@ -6,6 +6,37 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-04-24 — First live transcription from inside Claude Desktop
+
+**Exercised:** Full user-facing path — Claude Desktop → MCP tool call → `transcribe_audio` → transcript returned inline in Claude Desktop UI.
+
+**Environment:**
+- Claude Desktop (macwhisper MCP server wired via `claude_desktop_config.json`)
+- Python 3.13.13, `fastmcp==3.2.4`, CLI auto-detected
+- Allow-list: `~/Desktop:~/Downloads`
+- Audio: `~/Downloads/Test.m4a` — same short Danish voice memo as entries #1/#2
+
+**Result:** ✅ Success.
+
+- Two `CallToolRequest`s logged at 21:26 (first likely `list_allowed_paths`, second `transcribe_audio`).
+- Transcription completed in **~1.9s** (warm; consistent with entry #2).
+- Transcript (corrected): *"Dette er en test. Blåbærgrød. Blåbærgrød smager godt. Det indeholder også de danske karakterer Æ, Ø og Å. Tak."*
+- Note: MacWhisper rendered the Danish letter names as `E, Y og U` (phonetic approximations); corrected to `Æ, Ø og Å` by the user. Consistent with engine-level limitation documented in PRD §12.
+- `macwhisper-mcp.log` confirms: `Transcribing /Users/thomas/Downloads/Test.m4a` → `Transcribed 110 chars`.
+
+**What this proves:**
+
+| Layer | Status |
+|---|---|
+| Claude Desktop MCP tool invocation | ✅ real tool call, not synthetic client |
+| `claude_desktop_config.json` env var injection | ✅ allow-list picked up correctly |
+| Warm-run latency via Claude Desktop | ✅ ~1.9s, matches synthetic-client warm run |
+| File logging from Claude Desktop subprocess | ✅ server log written correctly |
+
+**Phase 1 verdict:** MVP complete. All TODO Phase 1 items checked off.
+
+---
+
 ### 2026-04-24 — Warm-run repeat via synthetic MCP client
 
 **Exercised:** Same pipeline as entry #1, rerun shortly after the cold run to measure warm-start latency. Server spawned fresh; MacWhisper app already resident.

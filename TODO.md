@@ -10,8 +10,8 @@ Tracking against [PRD.md](./PRD.md).
 - [x] License MacWhisper app
 - [x] Write PRD
 - [x] Scaffold repo structure
-- [ ] Initialize git, commit `chore: initial scaffold`
-- [ ] Create GitHub repo (private initially), push
+- [x] Initialize git, commit `chore: initial scaffold`
+- [x] Create GitHub repo (private initially), push
 - [ ] Verify `mw --help` works from terminal
 - [ ] Install deps: `pip install -r requirements.txt`
 
@@ -19,16 +19,16 @@ Tracking against [PRD.md](./PRD.md).
 
 Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 
-- [ ] `src/macwhisper_mcp/config.py` — load allowed paths from env, defaults to `~/Desktop`
-- [ ] `src/macwhisper_mcp/transcribe.py` — `run_mw(path: Path) -> str` using `subprocess.run` with argv list
-- [ ] `src/macwhisper_mcp/server.py` — FastMCP server exposing `transcribe_audio`
-- [ ] Path validation: resolve symlinks, check prefix against allow-list
-- [ ] File-exists check before invoking `mw`
-- [ ] Error handling: missing CLI, missing file, denied path, `mw` non-zero exit
-- [ ] File-based logging to `~/Library/Logs/macwhisper-mcp.log` (NOT stdout)
-- [ ] Manual smoke test: transcribe a 30-second test clip on Desktop
-- [ ] Wire into Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`)
-- [ ] Verify end-to-end: ask Claude to transcribe → summarize a file
+- [x] `src/macwhisper_mcp/config.py` — load allowed paths from env, defaults to `~/Desktop`
+- [x] `src/macwhisper_mcp/transcribe.py` — `run_mw(path: Path) -> str` using `subprocess.run` with argv list
+- [x] `src/macwhisper_mcp/server.py` — FastMCP server exposing `transcribe_audio`
+- [x] Path validation: resolve symlinks, check prefix against allow-list
+- [x] File-exists check before invoking `mw`
+- [x] Error handling: missing CLI, missing file, denied path, `mw` non-zero exit
+- [x] File-based logging to `~/Library/Logs/macwhisper-mcp.log` (NOT stdout)
+- [x] Manual smoke test: transcribe a 30-second test clip on Desktop
+- [x] Wire into Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`)
+- [x] Verify end-to-end: ask Claude to transcribe → summarize a file
 
 ## Phase 2 — Hardening (v0.2.0)
 
