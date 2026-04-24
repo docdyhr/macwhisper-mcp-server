@@ -8,7 +8,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-04-24)
 
-**Phases 1–4 complete. 7 MCP tools, 28 tests green.**
+**Phases 1–5 complete. 7 MCP tools, 33 tests green. v0.5.0.**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.2.4`
@@ -16,7 +16,7 @@ Verified working:
 - MacWhisper CLI at `/Applications/MacWhisper.app/Contents/MacOS/mw` — auto-detected by `config.py` (not on shell PATH; do not assume `mw` works bare)
 - MCP `initialize` + `tools/list` handshake works over stdio — both `transcribe_audio` and `list_allowed_paths` are exposed
 - **Live transcription round-trip confirmed** via synthetic MCP client — 13.6s on a short Danish clip, UTF-8 clean. See [`docs/live-tests.md`](./docs/live-tests.md).
-- 16/16 tests pass (`pytest -q`)
+- 33/33 tests pass (`pytest -q`)
 - Wired into Claude Desktop via console script `.venv/bin/macwhisper-mcp`; allowed paths: `~/Desktop` and `~/Downloads`
 
 Not yet done:

@@ -99,6 +99,8 @@ def build_server(config: Config | None = None) -> FastMCP:
         if _watcher and _watcher[0].is_running:
             return f"Already watching {_watcher[0].incoming}. Call stop_watch() first."
         incoming = Path(folder).expanduser().resolve()
+        if not any(incoming == base or base in incoming.parents for base in config.allowed_paths):
+            raise TranscribeError("Access denied: folder is outside the configured allow-list.")
         w = FolderWatcher(incoming, config)
         w.start()
         if _watcher:

@@ -15,7 +15,7 @@ def test_from_env_parses_colon_separated_paths(tmp_path, monkeypatch):
 
     monkeypatch.setenv("MACWHISPER_ALLOWED_PATHS", f"{a}:{b}")
     monkeypatch.setenv("MACWHISPER_CLI", "mw")
-    monkeypatch.setenv("MACWHISPER_LOG_PATH", str(tmp_path / "log.log"))
+    # Use default log path (~/Library/Logs/...) — tmp_path is outside home on macOS
 
     cfg = Config.from_env()
 
@@ -62,3 +62,13 @@ def test_is_path_allowed_accepts_nested_file(config, allowed_dir):
     nested.parent.mkdir(parents=True)
     nested.write_bytes(b"x")
     assert config.is_path_allowed(nested) is True
+
+
+def test_from_env_rejects_log_path_outside_home(tmp_path, monkeypatch):
+    a = tmp_path / "a"
+    a.mkdir()
+    monkeypatch.setenv("MACWHISPER_ALLOWED_PATHS", str(a))
+    monkeypatch.setenv("MACWHISPER_CLI", "mw")
+    monkeypatch.setenv("MACWHISPER_LOG_PATH", "/etc/macwhisper.log")
+    with pytest.raises(ValueError, match="MACWHISPER_LOG_PATH"):
+        Config.from_env()

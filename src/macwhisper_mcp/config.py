@@ -33,10 +33,19 @@ class Config:
         if not allowed:
             raise ValueError("MACWHISPER_ALLOWED_PATHS must contain at least one directory.")
 
+        log_path_str = os.environ.get("MACWHISPER_LOG_PATH", DEFAULT_LOG_PATH)
+        log_path = Path(log_path_str).expanduser()
+        home = Path.home()
+        # resolve() without strict handles non-existent paths via lexical .. collapsing.
+        if home not in log_path.resolve().parents:
+            raise ValueError(
+                f"MACWHISPER_LOG_PATH must be inside your home directory ({home}). Got: {log_path}"
+            )
+
         return cls(
             allowed_paths=allowed,
             mw_cli=os.environ.get("MACWHISPER_CLI", DEFAULT_CLI),
-            log_path=Path(os.environ.get("MACWHISPER_LOG_PATH", DEFAULT_LOG_PATH)).expanduser(),
+            log_path=log_path,
         )
 
     def is_path_allowed(self, path: Path) -> bool:

@@ -84,6 +84,7 @@ class FolderWatcher:
                 p
                 for p in self.incoming.iterdir()
                 if p.is_file()
+                and not p.is_symlink()  # symlinks could escape the allow-list
                 and p.suffix.lower() in ALLOWED_EXTENSIONS
                 and p.name not in self._failed
             ]

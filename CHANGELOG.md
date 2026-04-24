@@ -7,7 +7,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased] — v0.5.0
+## [0.5.0] — 2026-04-24
+
+### Security
+
+- **Resolve-before-validate in `transcribe()`.** Path symlinks are now fully resolved
+  *before* extension and allow-list checks, closing a TOCTOU race where a symlink could
+  change between validation and CLI invocation.
+- **Null-byte rejection.** Paths containing `\x00` are rejected immediately in
+  `transcribe()` before any filesystem access.
+- **Model identifier sanitization.** The `model` parameter is now validated against
+  `[a-zA-Z0-9_:.-]+` before being passed to the CLI, preventing argument injection.
+- **No allow-list leakage in errors.** "Access denied" messages no longer include the
+  full allow-list; this was an information-disclosure issue.
+- **`start_watch()` folder validation.** The folder path is now checked against the
+  allow-list before starting the watcher; previously any directory could be watched.
+- **Symlink rejection in watcher.** `FolderWatcher._scan()` skips symbolic links;
+  a symlink inside `incoming/` pointing outside the allow-list could otherwise cause
+  MacWhisper to read arbitrary files.
+- **`MACWHISPER_LOG_PATH` must be under `$HOME`.** `Config.from_env()` rejects log
+  paths outside the user's home directory to prevent log-file hijacking.
+- **Output size cap.** `transcribe()` raises `TranscribeError` if `mw` stdout exceeds
+  10 MB, guarding against runaway output consuming memory.
+
+---
+
+## [Unreleased]
 
 ---
 

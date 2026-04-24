@@ -7,12 +7,19 @@ All user-supplied paths are validated against the allow-list before they reach h
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
 from pathlib import Path
 
 from .config import ALLOWED_EXTENSIONS, Config
 
 log = logging.getLogger(__name__)
+
+# Allowed characters in a model identifier (engine:model-id format).
+_MODEL_RE = re.compile(r"[a-zA-Z0-9_:.-]+")
+
+# Hard cap on mw stdout to guard against runaway output.
+_MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 class TranscribeError(Exception):
@@ -37,24 +44,32 @@ def transcribe(
     Raises:
         TranscribeError: on any validation or CLI failure.
     """
+    if "\x00" in path_str:
+        raise TranscribeError("Invalid path: contains null byte.")
+
+    # Resolve symlinks *before* any other check to prevent TOCTOU races where a
+    # path passes validation then changes before the CLI reads it.
     path = Path(path_str).expanduser()
+    try:
+        resolved = path.resolve(strict=True)
+    except (FileNotFoundError, RuntimeError):
+        raise TranscribeError(f"File not found: {path}") from None
 
-    if not path.exists():
-        raise TranscribeError(f"File not found: {path}")
-
-    if path.suffix.lower() not in ALLOWED_EXTENSIONS:
+    if resolved.suffix.lower() not in ALLOWED_EXTENSIONS:
         raise TranscribeError(
-            f"Unsupported file type '{path.suffix}'. "
+            f"Unsupported file type '{resolved.suffix}'. "
             f"Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
         )
 
-    if not config.is_path_allowed(path):
+    if not config.is_path_allowed(resolved):
+        raise TranscribeError("Access denied: file is outside the configured allow-list.")
+
+    if model is not None and not _MODEL_RE.fullmatch(model):
         raise TranscribeError(
-            f"Access denied: {path} is outside the allowed paths. "
-            f"Configured allow-list: {[str(p) for p in config.allowed_paths]}"
+            f"Invalid model identifier '{model}'. "
+            "Use engine:model-id format, e.g. 'whisperkit:openai_whisper-large-v3-v20240930'."
         )
 
-    resolved = path.resolve(strict=True)
     cmd = [config.mw_cli, "transcribe", str(resolved)]
     if model:
         cmd.extend(["--model", model])
@@ -89,6 +104,11 @@ def transcribe(
     if proc.returncode != 0:
         err = (stderr or "").strip() or "(no stderr)"
         raise TranscribeError(f"MacWhisper CLI failed (exit {proc.returncode}): {err}")
+
+    if len(stdout) > _MAX_OUTPUT_BYTES:
+        raise TranscribeError(
+            f"MacWhisper output exceeded size limit ({_MAX_OUTPUT_BYTES // 1_000_000} MB)."
+        )
 
     transcript = stdout.strip()
     if not transcript:

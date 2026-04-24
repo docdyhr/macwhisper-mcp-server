@@ -115,3 +115,19 @@ def test_watcher_is_running_reflects_state(incoming, watch_config):
     assert watcher.is_running
     watcher.stop()
     assert not watcher.is_running
+
+
+def test_watcher_skips_symlinks(mocker, incoming, watch_config, tmp_path):
+    mock = _mock_watcher_popen(mocker)
+    target = tmp_path / "real.m4a"
+    target.write_bytes(b"audio")
+    symlink = incoming / "sneaky.m4a"
+    symlink.symlink_to(target)
+
+    watcher = FolderWatcher(incoming, watch_config, poll_interval=0.1)
+    watcher.start()
+    time.sleep(0.3)
+    watcher.stop()
+
+    mock.assert_not_called()
+    assert watcher.drain_results() == []

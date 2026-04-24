@@ -118,3 +118,21 @@ def test_transcribe_exposes_proc_ref(mocker, config, audio_file):
     # proc_ref is cleared after completion
     assert proc_ref == []
     mock_proc.communicate.assert_called_once()
+
+
+def test_transcribe_rejects_null_byte_in_path(config):
+    with pytest.raises(TranscribeError, match="null byte"):
+        transcribe("/some/path\x00evil", config)
+
+
+def test_transcribe_rejects_invalid_model(mocker, config, audio_file):
+    _mock_popen(mocker)
+    with pytest.raises(TranscribeError, match="Invalid model"):
+        transcribe(str(audio_file), config, model="bad model!")
+
+
+def test_transcribe_accepts_valid_model_with_hyphens(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    transcribe(str(audio_file), config, model="parakeet-pro:nvidia_parakeet-v3_494MB")
+    argv = mock.call_args[0][0]
+    assert "--model" in argv

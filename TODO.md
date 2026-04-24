@@ -55,12 +55,25 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 - [x] Cancel-running-job tool: `cancel_transcription()` kills the running subprocess
 - [x] Concurrent request handling: reject strategy with `threading.Lock`
 
-## Phase 5 — Release (v1.0.0)
+## Phase 5 — Security hardening (v0.5.0)
+
+- [x] Resolve symlinks before validation in `transcribe()` (TOCTOU fix)
+- [x] Reject null bytes in path input
+- [x] Sanitize `model` parameter with regex allow-list
+- [x] Remove allow-list from "Access denied" error messages (info disclosure)
+- [x] Validate `start_watch()` folder against allow-list
+- [x] Reject symlinks in `FolderWatcher._scan()`
+- [x] Validate `MACWHISPER_LOG_PATH` is under `$HOME`
+- [x] Cap `mw` stdout at 10 MB
+- [x] 5 new security tests; all 33 tests green
+
+## Phase 6 — Release (v1.0.0)
 
 - [ ] Publish to PyPI (optional)
 - [ ] Public GitHub release with changelog
 - [ ] Blog post / README polish for public discovery
 - [ ] Consider submitting to MCP registry / awesome-mcp lists
+- [ ] Bump version to 1.0.0 in pyproject.toml and __init__.py
 
 ---
 
