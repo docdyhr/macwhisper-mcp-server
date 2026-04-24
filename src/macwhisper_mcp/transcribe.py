@@ -19,7 +19,7 @@ class TranscribeError(Exception):
     """Raised for any user-facing transcription failure."""
 
 
-def transcribe(path_str: str, config: Config) -> str:
+def transcribe(path_str: str, config: Config, model: str | None = None) -> str:
     """Transcribe an audio file and return the transcript as text.
 
     Raises:
@@ -44,11 +44,14 @@ def transcribe(path_str: str, config: Config) -> str:
         )
 
     resolved = path.resolve(strict=True)
-    log.info("Transcribing %s", resolved)
+    cmd = [config.mw_cli, "transcribe", str(resolved)]
+    if model:
+        cmd.extend(["--model", model])
+    log.info("Transcribing %s (model=%s)", resolved, model or "default")
 
     try:
         result = subprocess.run(
-            [config.mw_cli, "transcribe", str(resolved)],
+            cmd,
             capture_output=True,
             text=True,
             check=True,

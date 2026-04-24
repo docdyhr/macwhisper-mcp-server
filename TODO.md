@@ -43,9 +43,10 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 
 ## Phase 3 — Structured output (v0.3.0)
 
-- [ ] Investigate `mw` CLI flags for JSON / SRT output → log findings in PRD §11
-- [ ] If supported: add `transcribe_structured(path) -> dict` returning segments with timestamps
-- [ ] If not supported: parse plain output into segments heuristically OR skip this phase
+- [x] Investigate `mw` CLI flags for JSON / SRT output → logged in PRD §11
+- [x] `--model` parameter exposed on `transcribe_audio` tool (engine:model-id format)
+- [ ] True structured output (timestamps, segments) not available via CLI — deferred until
+      MacWhisper adds a `--json` flag or we parse the internal SQLite DB directly
 
 ## Phase 4 — Ergonomics (v0.4.0)
 

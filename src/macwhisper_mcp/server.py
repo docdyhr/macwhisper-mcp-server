@@ -32,18 +32,22 @@ def build_server(config: Config | None = None) -> FastMCP:
     mcp = FastMCP("macwhisper")
 
     @mcp.tool()
-    def transcribe_audio(path: str) -> str:
+    def transcribe_audio(path: str, model: str | None = None) -> str:
         """Transcribe a local audio file using MacWhisper and return the transcript.
 
         Args:
             path: Absolute path to an audio file inside the configured allow-list.
                 Supported formats: m4a, mp3, mp4, mov, wav, aiff, flac.
+            model: Optional model override in MacWhisper engine:model-id format,
+                e.g. "whisperkit:openai_whisper-large-v3-v20240930" or
+                "parakeet-pro:nvidia_parakeet-v3_494MB". Defaults to the model
+                currently selected in MacWhisper.
 
         Returns:
             The full transcript as plain text.
         """
         try:
-            return transcribe(path, config)
+            return transcribe(path, config, model=model)
         except TranscribeError as e:
             log.warning("transcribe_audio failed: %s", e)
             # Re-raise so FastMCP returns a proper tool error to the client.

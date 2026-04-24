@@ -100,7 +100,22 @@ Transcript (stdout) → Claude
 
 ## 11. Open questions
 
-- Does MacWhisper `mw` CLI support a `--json` or `--srt` output mode for structured segments? (Check before v2.)
+### `mw` CLI capabilities (investigated 2026-04-24)
+
+`mw transcribe <file>` supports the following flags:
+
+| Flag | Effect |
+|------|--------|
+| `--model <id>` | Override the active model. ID format: `engine:model-id` (e.g. `whisperkit:openai_whisper-large-v3-v20240930`). |
+| `--stream` | Emit transcript segments to stdout as they finalise rather than all at once. Same plain-text format — no timestamps, no JSON. |
+| `--persist` | Save the transcription to MacWhisper's internal history. |
+
+**No JSON output. No SRT output. No timestamps.** Structured output (segments with start/end times, speaker labels) is not available via the CLI as of v0.3.0. Achieving it would require parsing MacWhisper's internal SQLite database directly — out of scope for now.
+
+`--stream` is intentionally **not** used: our wrapper reads `stdout` after the process exits (`capture_output=True`), which is simpler and avoids the streaming-parse complexity. See `CLAUDE.md` quirks.
+
+### Remaining open questions
+
 - Should we expose a `cancel_transcription` tool for long-running jobs?
 - How to handle concurrent transcription requests — queue or reject?
 

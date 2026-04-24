@@ -88,3 +88,20 @@ def test_transcribe_rejects_empty_transcript(mocker, config, audio_file):
     _mock_run_success(mocker, stdout="   \n  ")
     with pytest.raises(TranscribeError, match="empty transcript"):
         transcribe(str(audio_file), config)
+
+
+def test_transcribe_passes_model_flag(mocker, config, audio_file):
+    mock = _mock_run_success(mocker)
+    transcribe(str(audio_file), config, model="whisperkit:openai_whisper-large-v3-v20240930")
+
+    argv = mock.call_args[0][0]
+    assert "--model" in argv
+    assert argv[argv.index("--model") + 1] == "whisperkit:openai_whisper-large-v3-v20240930"
+
+
+def test_transcribe_omits_model_flag_when_none(mocker, config, audio_file):
+    mock = _mock_run_success(mocker)
+    transcribe(str(audio_file), config, model=None)
+
+    argv = mock.call_args[0][0]
+    assert "--model" not in argv
