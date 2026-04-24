@@ -32,13 +32,14 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 
 ## Phase 2 — Hardening (v0.2.0)
 
-- [ ] Add file-extension allow-list (`.m4a`, `.mp3`, `.wav`, `.mp4`, `.mov`)
-- [ ] Add `list_allowed_paths()` MCP tool for discoverability
-- [ ] Unit tests: `test_config.py`, `test_transcribe.py` (mock `subprocess.run`)
-- [ ] Integration test with a tiny sample audio file checked into `tests/fixtures/`
-- [ ] GitHub Actions CI: lint (ruff) + tests on push/PR
-- [ ] Pre-commit hooks: ruff, ruff-format
+- [x] Add file-extension allow-list (`.m4a`, `.mp3`, `.wav`, `.mp4`, `.mov`)
+- [x] Add `list_allowed_paths()` MCP tool for discoverability
+- [x] Unit tests: `test_config.py`, `test_transcribe.py` (mock `subprocess.run`)
+- [x] Integration test with a tiny sample audio file checked into `tests/fixtures/`
+- [x] GitHub Actions CI: lint (ruff) + tests on push/PR (fixed branch: master)
+- [x] Pre-commit hooks: ruff, ruff-format (`.pre-commit-config.yaml`)
 - [ ] Write proper README with install + config walkthrough + screenshots
+- [ ] Add `scripts/smoke_test.py <audio-file>` — reusable CLI harness for live testing
 
 ## Phase 3 — Structured output (v0.3.0)
 

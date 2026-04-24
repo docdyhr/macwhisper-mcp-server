@@ -71,3 +71,4 @@ tests/fixtures/*.m4a
 tests/fixtures/*.mp3
 tests/fixtures/*.wav
 !tests/fixtures/.gitkeep
+!tests/fixtures/sample.wav
