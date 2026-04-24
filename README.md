@@ -42,10 +42,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "macwhisper": {
-      "command": "/Users/<you>/Programming/macwhisper-mcp-server/.venv/bin/python",
-      "args": ["-m", "macwhisper_mcp.server"],
+      "command": "/Users/<you>/Programming/macwhisper-mcp-server/.venv/bin/macwhisper-mcp",
+      "args": [],
       "env": {
-        "MACWHISPER_ALLOWED_PATHS": "/Users/<you>/Desktop:/Users/<you>/Transcriptions"
+        "MACWHISPER_ALLOWED_PATHS": "/Users/<you>/Desktop:/Users/<you>/Downloads"
       }
     }
   }
@@ -62,7 +62,9 @@ Restart Claude Desktop. Ask: *"Transcribe ~/Desktop/memo.m4a and summarize in Da
 | `MACWHISPER_CLI` | `mw` | Path to MacWhisper CLI |
 | `MACWHISPER_LOG_PATH` | `~/Library/Logs/macwhisper-mcp.log` | Log file path |
 
-Copy `.env.example` to `.env` for local development.
+**Local development:** copy `.env.example` to `.env` and adjust. If you use [direnv](https://direnv.net/), `.envrc` loads `.env` automatically via `dotenv_if_exists`. Without direnv, run `source .env` before starting the server manually.
+
+**Claude Desktop:** env vars are passed directly via the `env` dict in `claude_desktop_config.json` — `.env` is not read by the server process.
 
 ## Development
 

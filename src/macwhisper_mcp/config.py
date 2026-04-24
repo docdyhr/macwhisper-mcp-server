@@ -8,7 +8,11 @@ from pathlib import Path
 
 DEFAULT_ALLOWED = str(Path.home() / "Desktop")
 DEFAULT_LOG_PATH = str(Path.home() / "Library" / "Logs" / "macwhisper-mcp.log")
-DEFAULT_CLI = "mw"
+
+# MacWhisper ships its CLI binary inside the app bundle and does not put it on PATH
+# by default. Prefer the app-bundle path if present, fall back to `mw` on PATH.
+_BUNDLED_CLI = Path("/Applications/MacWhisper.app/Contents/MacOS/mw")
+DEFAULT_CLI = str(_BUNDLED_CLI) if _BUNDLED_CLI.exists() else "mw"
 
 # File extensions accepted by MacWhisper. Reject anything else before invoking the CLI.
 ALLOWED_EXTENSIONS: frozenset[str] = frozenset(

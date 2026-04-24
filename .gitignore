@@ -59,6 +59,9 @@ coverage.xml
 .env.local
 *.log
 
+# direnv — override global gitignore so .envrc is committed as project config
+!.envrc
+
 # Claude / agent config
 .claude/
 CLAUDE.local.md

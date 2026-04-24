@@ -9,7 +9,7 @@ Tracking against [PRD.md](./PRD.md).
 - [x] Install Python 3.13.13 via pyenv
 - [x] License MacWhisper app
 - [x] Write PRD
-- [ ] Scaffold repo structure
+- [x] Scaffold repo structure
 - [ ] Initialize git, commit `chore: initial scaffold`
 - [ ] Create GitHub repo (private initially), push
 - [ ] Verify `mw --help` works from terminal
