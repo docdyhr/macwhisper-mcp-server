@@ -8,18 +8,19 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-04-24)
 
-**Scaffolded and wired into Claude Desktop. First live transcription not yet confirmed.**
+**Scaffolded, wired into Claude Desktop, and verified end-to-end via synthetic MCP client with a real Danish transcription. First transcription from inside Claude Desktop not yet confirmed.**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.2.4`
 - Package imports cleanly (`macwhisper_mcp.{config,transcribe,server}`)
 - MacWhisper CLI at `/Applications/MacWhisper.app/Contents/MacOS/mw` — auto-detected by `config.py` (not on shell PATH; do not assume `mw` works bare)
 - MCP `initialize` + `tools/list` handshake works over stdio — both `transcribe_audio` and `list_allowed_paths` are exposed
+- **Live transcription round-trip confirmed** via synthetic MCP client — 13.6s on a short Danish clip, UTF-8 clean. See [`docs/live-tests.md`](./docs/live-tests.md).
 - 16/16 tests pass (`pytest -q`)
 - Wired into Claude Desktop via console script `.venv/bin/macwhisper-mcp`; allowed paths: `~/Desktop` and `~/Downloads`
 
 Not yet done:
-- First real transcription via Claude Desktop
+- First real transcription *from inside Claude Desktop* (synthetic client works; this is the user-facing path)
 - CI has never run (repo exists at `github.com/docdyhr/macwhisper-mcp-server`, workflow is written but hasn't triggered yet)
 
 ## Dev commands
@@ -83,9 +84,13 @@ In priority order — check against TODO.md Phase 1:
 
 1. ~~Initialize git and push to GitHub~~ — done. Repo at `github.com/docdyhr/macwhisper-mcp-server`.
 2. ~~Wire into Claude Desktop config~~ — done. Console script wired, `~/Desktop` and `~/Downloads` allowed.
-3. Run the first live transcription on a file in `~/Desktop` and log any rough edges here.
-4. Add a test asserting `config.py` picks up `/Applications/MacWhisper.app/Contents/MacOS/mw` when the file exists (pair it with a `monkeypatch` of the `_BUNDLED_CLI` constant).
-5. Move to TODO Phase 2 (hardening: extension allow-list already done, so focus on integration test with a real tiny audio fixture).
+3. ~~First live transcription via synthetic MCP client~~ — done 2026-04-24. See [`docs/live-tests.md`](./docs/live-tests.md).
+4. Run the first live transcription **from inside Claude Desktop** on a file in `~/Desktop` or `~/Downloads`. Log the result as a new entry in `docs/live-tests.md` using the same format.
+5. Add a test asserting `config.py` picks up `/Applications/MacWhisper.app/Contents/MacOS/mw` when the file exists (pair it with a `monkeypatch` of the `_BUNDLED_CLI` constant).
+6. Add a reusable `scripts/smoke_test.py <audio-file>` that runs the handshake + `tools/call transcribe_audio` and prints the transcript — replaces the one-off `/tmp/mcp_live_transcribe.py` pattern used on 2026-04-24.
+7. Move to TODO Phase 2 (hardening: extension allow-list already done, so focus on integration test with a real tiny audio fixture).
+
+**Live test logging protocol.** Any end-to-end test against the running server — synthetic client, Claude Desktop, future smoke-test script, anything — gets a new entry appended to [`docs/live-tests.md`](./docs/live-tests.md). One entry per distinct run. Do not overwrite old entries; they are the regression record.
 
 ## Things to NOT do
 

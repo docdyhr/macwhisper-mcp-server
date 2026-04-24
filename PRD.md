@@ -103,3 +103,7 @@ Transcript (stdout) → Claude
 - Does MacWhisper `mw` CLI support a `--json` or `--srt` output mode for structured segments? (Check before v2.)
 - Should we expose a `cancel_transcription` tool for long-running jobs?
 - How to handle concurrent transcription requests — queue or reject?
+
+## 12. Known limitations (engine-level, not fixable in this wrapper)
+
+- **Danish letter-name transliteration.** When a speaker *names* the special Danish letters ("æ, ø, å"), Whisper tends to transliterate them to their closest Latin-alphabet equivalents (`E, Y, U` or similar) rather than writing the actual characters. Letters appearing *inside* words are transcribed correctly — e.g. `Blåbærgrød` renders with both `å` and `æ`. This is a MacWhisper/Whisper model behavior; document it in the README so users don't file it as a bug.
