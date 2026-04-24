@@ -38,8 +38,8 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 - [x] Integration test with a tiny sample audio file checked into `tests/fixtures/`
 - [x] GitHub Actions CI: lint (ruff) + tests on push/PR (fixed branch: master)
 - [x] Pre-commit hooks: ruff, ruff-format (`.pre-commit-config.yaml`)
-- [ ] Write proper README with install + config walkthrough + screenshots
-- [ ] Add `scripts/smoke_test.py <audio-file>` — reusable CLI harness for live testing
+- [x] Write proper README with install + config walkthrough + screenshots
+- [x] Add `scripts/smoke_test.py <audio-file>` — reusable CLI harness for live testing
 
 ## Phase 3 — Structured output (v0.3.0)
 
