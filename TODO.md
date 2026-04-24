@@ -50,10 +50,10 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 
 ## Phase 4 — Ergonomics (v0.4.0)
 
-- [ ] Watch-folder mode: `~/Transcriptions/incoming` auto-transcribes, moves to `/done`
-- [ ] Language parameter passed through to `mw`
-- [ ] Cancel-running-job tool
-- [ ] Concurrent request handling strategy decided (queue vs. reject)
+- [x] Watch-folder mode: `start_watch` / `stop_watch` / `get_watch_results` MCP tools
+- [x] Language parameter — investigated: `mw` has no `--language` flag (PRD §11); Whisper is multilingual by default
+- [x] Cancel-running-job tool: `cancel_transcription()` kills the running subprocess
+- [x] Concurrent request handling: reject strategy with `threading.Lock`
 
 ## Phase 5 — Release (v1.0.0)
 

@@ -1,6 +1,6 @@
 """Thin wrapper around the MacWhisper `mw` CLI.
 
-Invoked via `subprocess.run` with an argv list — never shell=True.
+Invoked via `subprocess.Popen` with an argv list — never shell=True.
 All user-supplied paths are validated against the allow-list before they reach here.
 """
 
@@ -19,12 +19,23 @@ class TranscribeError(Exception):
     """Raised for any user-facing transcription failure."""
 
 
-def transcribe(path_str: str, config: Config, model: str | None = None) -> str:
+def transcribe(
+    path_str: str,
+    config: Config,
+    model: str | None = None,
+    _proc_ref: list[subprocess.Popen] | None = None,
+) -> str:
     """Transcribe an audio file and return the transcript as text.
 
+    Args:
+        path_str: Path to the audio file (expanded and validated here).
+        config: Server configuration (allow-list, CLI path, …).
+        model: Optional model override in ``engine:model-id`` format.
+        _proc_ref: If provided, the live Popen object is appended here so
+            callers can kill it (cancel support). Cleared on completion.
+
     Raises:
-        TranscribeError: on any validation or CLI failure. The message is safe to
-            surface to the MCP client.
+        TranscribeError: on any validation or CLI failure.
     """
     path = Path(path_str).expanduser()
 
@@ -50,25 +61,36 @@ def transcribe(path_str: str, config: Config, model: str | None = None) -> str:
     log.info("Transcribing %s (model=%s)", resolved, model or "default")
 
     try:
-        result = subprocess.run(
+        proc = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            check=True,
-            timeout=60 * 60,  # 1h hard cap
         )
     except FileNotFoundError as e:
         raise TranscribeError(
             f"MacWhisper CLI '{config.mw_cli}' not found on PATH. "
             "Open MacWhisper → Settings → enable CLI."
         ) from e
-    except subprocess.TimeoutExpired as e:
-        raise TranscribeError("Transcription timed out after 1 hour.") from e
-    except subprocess.CalledProcessError as e:
-        stderr = (e.stderr or "").strip() or "(no stderr)"
-        raise TranscribeError(f"MacWhisper CLI failed (exit {e.returncode}): {stderr}") from e
 
-    transcript = result.stdout.strip()
+    if _proc_ref is not None:
+        _proc_ref.append(proc)
+
+    try:
+        stdout, stderr = proc.communicate(timeout=60 * 60)  # 1h hard cap
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        raise TranscribeError("Transcription timed out after 1 hour.") from None
+    finally:
+        if _proc_ref is not None and proc in _proc_ref:
+            _proc_ref.remove(proc)
+
+    if proc.returncode != 0:
+        err = (stderr or "").strip() or "(no stderr)"
+        raise TranscribeError(f"MacWhisper CLI failed (exit {proc.returncode}): {err}")
+
+    transcript = stdout.strip()
     if not transcript:
         raise TranscribeError("MacWhisper returned an empty transcript.")
 

@@ -1,4 +1,4 @@
-"""Tests for the `transcribe` wrapper. `subprocess.run` is mocked throughout."""
+"""Tests for the `transcribe` wrapper. `subprocess.Popen` is mocked throughout."""
 
 from __future__ import annotations
 
@@ -10,22 +10,25 @@ import pytest
 from macwhisper_mcp.transcribe import TranscribeError, transcribe
 
 
-def _mock_run_success(mocker, stdout: str = "hello world"):
+def _mock_popen(mocker, stdout: str = "hello world", returncode: int = 0):
+    mock_proc = MagicMock()
+    mock_proc.communicate.return_value = (stdout, "")
+    mock_proc.returncode = returncode
     mock = mocker.patch(
-        "macwhisper_mcp.transcribe.subprocess.run",
-        return_value=MagicMock(stdout=stdout, stderr="", returncode=0),
+        "macwhisper_mcp.transcribe.subprocess.Popen",
+        return_value=mock_proc,
     )
-    return mock
+    return mock, mock_proc
 
 
 def test_transcribe_returns_stdout(mocker, config, audio_file):
-    _mock_run_success(mocker, stdout="  transcript text  \n")
+    _mock_popen(mocker, stdout="  transcript text  \n")
     assert transcribe(str(audio_file), config) == "transcript text"
 
 
 def test_transcribe_uses_argv_list_not_shell(mocker, config, audio_file):
     """Critical security property: never invoke the CLI through a shell."""
-    mock = _mock_run_success(mocker)
+    mock, _ = _mock_popen(mocker)
     transcribe(str(audio_file), config)
 
     args, kwargs = mock.call_args
@@ -57,7 +60,7 @@ def test_transcribe_rejects_path_outside_allow_list(config, tmp_path):
 
 def test_transcribe_reports_missing_cli(mocker, config, audio_file):
     mocker.patch(
-        "macwhisper_mcp.transcribe.subprocess.run",
+        "macwhisper_mcp.transcribe.subprocess.Popen",
         side_effect=FileNotFoundError("no mw"),
     )
     with pytest.raises(TranscribeError, match="not found on PATH"):
@@ -65,33 +68,34 @@ def test_transcribe_reports_missing_cli(mocker, config, audio_file):
 
 
 def test_transcribe_reports_cli_failure(mocker, config, audio_file):
-    mocker.patch(
-        "macwhisper_mcp.transcribe.subprocess.run",
-        side_effect=subprocess.CalledProcessError(
-            returncode=2, cmd=["mw"], stderr="bad audio format"
-        ),
-    )
+    mock_proc = MagicMock()
+    mock_proc.communicate.return_value = ("", "bad audio format")
+    mock_proc.returncode = 2
+    mocker.patch("macwhisper_mcp.transcribe.subprocess.Popen", return_value=mock_proc)
     with pytest.raises(TranscribeError, match="bad audio format"):
         transcribe(str(audio_file), config)
 
 
 def test_transcribe_reports_timeout(mocker, config, audio_file):
-    mocker.patch(
-        "macwhisper_mcp.transcribe.subprocess.run",
-        side_effect=subprocess.TimeoutExpired(cmd=["mw"], timeout=1),
-    )
+    mock_proc = MagicMock()
+    # First communicate() raises TimeoutExpired; second (cleanup after kill) returns normally.
+    mock_proc.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd=["mw"], timeout=1),
+        ("", ""),
+    ]
+    mocker.patch("macwhisper_mcp.transcribe.subprocess.Popen", return_value=mock_proc)
     with pytest.raises(TranscribeError, match="timed out"):
         transcribe(str(audio_file), config)
 
 
 def test_transcribe_rejects_empty_transcript(mocker, config, audio_file):
-    _mock_run_success(mocker, stdout="   \n  ")
+    _mock_popen(mocker, stdout="   \n  ")
     with pytest.raises(TranscribeError, match="empty transcript"):
         transcribe(str(audio_file), config)
 
 
 def test_transcribe_passes_model_flag(mocker, config, audio_file):
-    mock = _mock_run_success(mocker)
+    mock, _ = _mock_popen(mocker)
     transcribe(str(audio_file), config, model="whisperkit:openai_whisper-large-v3-v20240930")
 
     argv = mock.call_args[0][0]
@@ -100,8 +104,17 @@ def test_transcribe_passes_model_flag(mocker, config, audio_file):
 
 
 def test_transcribe_omits_model_flag_when_none(mocker, config, audio_file):
-    mock = _mock_run_success(mocker)
+    mock, _ = _mock_popen(mocker)
     transcribe(str(audio_file), config, model=None)
 
     argv = mock.call_args[0][0]
     assert "--model" not in argv
+
+
+def test_transcribe_exposes_proc_ref(mocker, config, audio_file):
+    _mock, mock_proc = _mock_popen(mocker)
+    proc_ref: list = []
+    transcribe(str(audio_file), config, _proc_ref=proc_ref)
+    # proc_ref is cleared after completion
+    assert proc_ref == []
+    mock_proc.communicate.assert_called_once()

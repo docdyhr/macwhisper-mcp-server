@@ -8,7 +8,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-04-24)
 
-**Phases 1–3 complete. Live Claude Desktop transcription confirmed. `model` parameter added to `transcribe_audio`.**
+**Phases 1–4 complete. 7 MCP tools, 28 tests green.**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.2.4`

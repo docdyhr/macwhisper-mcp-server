@@ -78,8 +78,12 @@ You should see a `transcribe_audio` tool call appear, followed by the transcript
 
 | Tool | Description |
 |------|-------------|
-| `transcribe_audio(path)` | Transcribe an audio file and return the transcript as plain text |
+| `transcribe_audio(path, model?)` | Transcribe an audio file and return the transcript as plain text |
+| `cancel_transcription()` | Cancel the currently running transcription |
 | `list_allowed_paths()` | Return the directories the server is allowed to read from |
+| `start_watch(folder)` | Watch a folder and auto-transcribe new audio files into `../done/` |
+| `stop_watch()` | Stop the active folder watcher |
+| `get_watch_results()` | Return completed watch-folder transcriptions and clear the queue |
 
 Supported audio formats: `.m4a` `.mp3` `.mp4` `.mov` `.wav` `.aiff` `.flac`
 

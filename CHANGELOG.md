@@ -7,7 +7,36 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased] — v0.3.0
+## [Unreleased] — v0.5.0
+
+---
+
+## [0.4.0] — 2026-04-24
+
+### Added
+- **Concurrency rejection.** A `threading.Lock` in the server rejects a second
+  `transcribe_audio` call while one is already in progress, returning a clear
+  "Busy" error instead of silently queuing or crashing.
+- **`cancel_transcription()` MCP tool.** Kills the running MacWhisper subprocess
+  mid-transcription. Useful for long audio or cold-start situations.
+- **`start_watch(folder)` / `stop_watch()` / `get_watch_results()` MCP tools.**
+  Background folder watcher: drops audio files into the watched `incoming/`
+  directory and they are transcribed automatically and moved to `done/`.
+  Failed files are skipped for the remainder of the session (not retried in a loop).
+- **`watcher.py`** — `FolderWatcher` class with atomic rename-based claim to
+  prevent double-processing and thread-safe result queue.
+- Refactored `subprocess.run` → `subprocess.Popen + communicate` in `transcribe.py`
+  to enable external process cancellation.
+- 6 new watcher tests; all transcribe tests updated for Popen mock pattern.
+
+### Investigated
+- **Language parameter** (`mw --language`): flag does not exist in the MacWhisper CLI.
+  Documented in PRD §11. Users select language via model choice (Whisper is
+  multilingual by default).
+
+---
+
+## [0.3.0] — 2026-04-24
 
 ### Added
 - `model` parameter on `transcribe_audio` tool — pass any `mw`-recognised model ID
