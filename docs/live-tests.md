@@ -6,6 +6,32 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-04-24 — smoke_test.py against tears_in_rain.wav (English, Blade Runner)
+
+**Exercised:** `scripts/smoke_test.py` — first run of the reusable harness against a real English fixture.
+
+**Environment:**
+- `python scripts/smoke_test.py tests/fixtures/tears_in_rain.wav`
+- Python 3.13.13, `fastmcp==3.2.4`, CLI auto-detected, allow-list set to fixture parent dir
+
+**Result:** ✅ Success.
+
+- Tools listed: `transcribe_audio`, `list_allowed_paths`
+- Time: **1.79s** (warm)
+- Chars: **232**
+- Transcript:
+  > I've seen things you people wouldn't believe.
+  > Attack ships on fire off the shoulder of Orion.
+  > I watched sea beams glitter in the dark near the Tannhosser Gate.
+  > All those moments will be lost in time, like tears in rain.
+  > Time to die.
+
+**Known engine quirks (PRD §12):** "C-beams" → "sea beams"; "Tannhäuser" → "Tannhosser". Both are Whisper mishearings, not wrapper bugs.
+
+**What this proves:** `scripts/smoke_test.py` is a working replacement for the `/tmp/` one-off pattern. English transcription clean, timing consistent with prior warm runs.
+
+---
+
 ### 2026-04-24 — First live transcription from inside Claude Desktop
 
 **Exercised:** Full user-facing path — Claude Desktop → MCP tool call → `transcribe_audio` → transcript returned inline in Claude Desktop UI.
