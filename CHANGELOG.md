@@ -11,6 +11,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.0.1] — 2026-04-25
+
+### Changed
+- Add `mcp-name` marker to README for MCP Registry (registry.modelcontextprotocol.io) ownership verification.
+
+---
+
 ## [1.0.0] — 2026-04-25
 
 First stable public release. All five development phases complete: MVP → hardening

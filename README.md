@@ -1,4 +1,5 @@
 # macwhisper-mcp-server
+<!-- mcp-name: io.github.docdyhr/macwhisper-mcp-server -->
 
 Local MCP server that connects [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) to [Claude Desktop](https://claude.ai/download).
 
