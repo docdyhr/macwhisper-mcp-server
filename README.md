@@ -1,14 +1,20 @@
 # macwhisper-mcp-server
 
-Local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) transcription to Claude Desktop.
+Local MCP server that connects [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) to [Claude Desktop](https://claude.ai/download).
+
+**What it does:** Drop an audio file on your Desktop, then ask Claude to transcribe it, summarise it, or pull out action items — in one step. MacWhisper does the transcription on your Mac; Claude does the thinking. Nothing leaves your machine. No cloud APIs. No data ever leaves your Mac.
 
 ```
 Audio file  →  MacWhisper CLI  →  MCP server  →  Claude Desktop
 ```
 
-Fully local. No cloud. No data leaves your Mac.
-
 [![CI](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/ci.yml)
+
+---
+
+<!-- Screenshot: capture Claude Desktop mid-transcription (the tool-call bubble +
+     the transcript appearing), save as docs/screenshot.png, then remove this comment. -->
+![Claude Desktop transcribing an audio file](docs/screenshot.png)
 
 ---
 
