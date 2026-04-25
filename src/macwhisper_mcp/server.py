@@ -47,8 +47,14 @@ def build_server(config: Config | None = None) -> FastMCP:
     def transcribe_audio(path: str, model: str | None = None, persist: bool = False) -> str:
         """Transcribe a local audio file using MacWhisper and return the transcript.
 
+        IMPORTANT: ``path`` must be a file on the user's Mac filesystem inside the
+        configured allow-list (typically ~/Desktop or ~/Downloads). Files uploaded
+        to the Claude chat window are NOT accessible — ask the user to save the file
+        to their Desktop or Downloads folder first.
+
         Args:
-            path: Absolute path to an audio file inside the configured allow-list.
+            path: Absolute or ``~``-prefixed path to an audio file on the local Mac
+                filesystem inside the configured allow-list.
                 Supported formats: m4a, mp3, mp4, mov, wav, aiff, flac.
             model: Optional model override in MacWhisper engine:model-id format,
                 e.g. "whisperkit:openai_whisper-large-v3-v20240930". Use

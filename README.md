@@ -68,7 +68,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add:
       "command": "/Users/<you>/macwhisper-mcp-server/.venv/bin/macwhisper-mcp",
       "args": [],
       "env": {
-        "MACWHISPER_ALLOWED_PATHS": "/Users/<you>/Desktop:/Users/<you>/Downloads"
+        "MACWHISPER_ALLOWED_PATHS": "/Users/<you>/Desktop:/Users/<you>/Downloads",
+        "FASTMCP_CHECK_FOR_UPDATES": "off"
       }
     }
   }
@@ -76,6 +77,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add:
 ```
 
 Replace `<you>` with your macOS username. Restart Claude Desktop.
+
+> **Note:** Audio files must be saved to your Mac's filesystem (Desktop, Downloads, or another allow-listed folder) before asking Claude to transcribe them. Files uploaded directly to the Claude chat window live in Claude's container and are not accessible to the local MacWhisper CLI.
 
 ### Verify it works
 
