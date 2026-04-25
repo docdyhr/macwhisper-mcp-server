@@ -10,6 +10,9 @@ Audio file  →  MacWhisper CLI  →  MCP server  →  Claude Desktop
 ```
 
 [![CI](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/codeql.yml/badge.svg)](https://github.com/docdyhr/macwhisper-mcp-server/actions/workflows/codeql.yml)
+[![PyPI version](https://img.shields.io/pypi/v/macwhisper-mcp-server)](https://pypi.org/project/macwhisper-mcp-server/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
 
