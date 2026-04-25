@@ -8,14 +8,13 @@ version = "1.0.0"
 description = "Local MCP server exposing MacWhisper transcription to Claude Desktop."
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Thomas" }]
 keywords = ["mcp", "macwhisper", "transcription", "claude", "llm"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: MacOS X",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
@@ -36,8 +35,8 @@ dev = [
 macwhisper-mcp = "macwhisper_mcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/thomas/macwhisper-mcp-server"
-Issues = "https://github.com/thomas/macwhisper-mcp-server/issues"
+Homepage = "https://github.com/docdyhr/macwhisper-mcp-server"
+Issues = "https://github.com/docdyhr/macwhisper-mcp-server/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
