@@ -12,9 +12,7 @@ Audio file  →  MacWhisper CLI  →  MCP server  →  Claude Desktop
 
 ---
 
-<!-- Screenshot: capture Claude Desktop mid-transcription (the tool-call bubble +
-     the transcript appearing), save as docs/screenshot.png, then remove this comment. -->
-![Claude Desktop transcribing an audio file](docs/screenshot.png)
+![Claude Desktop transcribing an audio file](images/MacWhisper-MCP-server.png)
 
 ---
 
