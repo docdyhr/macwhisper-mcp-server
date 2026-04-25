@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-04-25
+
 ### Added
 - `list_models()` MCP tool — runs `mw models list` and returns installed
   MacWhisper models with display names; the active model is marked `[active]`.
