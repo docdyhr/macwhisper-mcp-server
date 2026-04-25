@@ -20,9 +20,16 @@ Audio file  →  MacWhisper CLI  →  MCP server  →  Claude Desktop
 ## Requirements
 
 - macOS (MacWhisper is macOS-only)
-- [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) — installed, licensed, CLI enabled in Settings
+- [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) — installed and licensed
+- MacWhisper CLI enabled: open MacWhisper → Settings → Advanced → Command-Line Tool → Install. This places `mw` at `/usr/local/bin/mw`.
 - Python 3.13.x via [pyenv](https://github.com/pyenv/pyenv)
 - [Claude Desktop](https://claude.ai/download)
+
+**Installing MacWhisper via Homebrew:**
+```bash
+brew install --cask macwhisper
+```
+After installation, enable the CLI in MacWhisper Settings as above. When you later run `brew upgrade --cask macwhisper`, the CLI symlink updates automatically — no re-install needed.
 
 ---
 
@@ -42,10 +49,8 @@ pip install -e .
 Verify the MacWhisper CLI is reachable:
 
 ```bash
-/Applications/MacWhisper.app/Contents/MacOS/mw --help
+mw version
 ```
-
-If you get "command not found": open MacWhisper → Settings → enable CLI.
 
 ---
 
@@ -83,7 +88,8 @@ You should see a `transcribe_audio` tool call appear, followed by the transcript
 
 | Tool | Description |
 |------|-------------|
-| `transcribe_audio(path, model?)` | Transcribe an audio file and return the transcript as plain text |
+| `transcribe_audio(path, model?, persist?)` | Transcribe an audio file and return the transcript as plain text. Pass `persist=true` to save to MacWhisper history. |
+| `list_models()` | List transcription models installed in MacWhisper; active model is marked |
 | `cancel_transcription()` | Cancel the currently running transcription |
 | `list_allowed_paths()` | Return the directories the server is allowed to read from |
 | `start_watch(folder)` | Watch a folder and auto-transcribe new audio files into `../done/` |

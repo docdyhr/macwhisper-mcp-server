@@ -10,9 +10,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- `tests/test_server.py` — 10 new tests covering all 6 MCP tools: concurrency lock
-  rejection, lock release on exception, cancel with/without running process,
-  allow-list enforcement in `start_watch`, and watch lifecycle.
+- `list_models()` MCP tool — runs `mw models list` and returns installed
+  MacWhisper models with display names; the active model is marked `[active]`.
+  Model IDs returned can be passed directly to `transcribe_audio(model=…)`.
+- `persist` parameter on `transcribe_audio` — pass `persist=true` to save the
+  transcription to MacWhisper's history database (`mw --persist`).
+- `tests/test_server.py` — 13 tests covering all 8 MCP tools including `list_models`
+  and `persist`, concurrency lock, lock-release-on-exception, and cancel.
 
 ### Fixed
 - `watcher.py`: apply 10 MB output size cap to watcher transcriptions, matching
@@ -24,6 +28,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `pyproject.toml`: narrowed `requires-python` from `>=3.10` to `>=3.13` to match
   the Python version actually tested and supported.
 - `.gitignore`: added `server.json` (MCP Registry publish artifact).
+
+### Documentation
+- README: added Homebrew install path, `mw version` verify command, updated tools
+  table with `list_models` and `persist`.
+- CLAUDE.md: updated status, layout, known quirks, and mock path conventions to
+  reflect current codebase.
 
 ---
 

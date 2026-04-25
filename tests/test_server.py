@@ -270,3 +270,60 @@ def test_get_watch_results_no_watcher(config):
     result = _call(mcp, "get_watch_results", {})
     assert not result.is_error
     assert result.data == []
+
+
+# ---------------------------------------------------------------------------
+# transcribe_audio — persist flag
+# ---------------------------------------------------------------------------
+
+
+def test_transcribe_audio_persist_flag(mocker, config, audio_file):
+    mock_proc = MagicMock()
+    mock_proc.communicate.return_value = ("Transcript.", "")
+    mock_proc.returncode = 0
+    mock = mocker.patch("macwhisper_mcp.transcribe.subprocess.Popen", return_value=mock_proc)
+
+    mcp = build_server(config)
+    result = _call(mcp, "transcribe_audio", {"path": str(audio_file), "persist": True})
+
+    assert not result.is_error
+    assert "--persist" in mock.call_args[0][0]
+
+
+# ---------------------------------------------------------------------------
+# list_models
+# ---------------------------------------------------------------------------
+
+_MODELS_OUTPUT = (
+    "ID                                            NAME                 SIZE  \n"
+    "▸ whisperkit:openai_whisper-large-v3-v20240930  Large v3 Turbo       -     \n"
+    "  parakeet-pro:nvidia_parakeet-v3_494MB         Parakeet v3 (494MB)  494 MB\n"
+)
+
+
+def test_list_models_returns_parsed_list(mocker, config):
+    mock_result = MagicMock()
+    mock_result.stdout = _MODELS_OUTPUT
+    mocker.patch("macwhisper_mcp.server.subprocess.run", return_value=mock_result)
+
+    mcp = build_server(config)
+    result = _call(mcp, "list_models", {})
+
+    assert not result.is_error
+    models = result.data
+    assert len(models) == 2
+    assert "whisperkit:openai_whisper-large-v3-v20240930" in models[0]
+    assert "[active]" in models[0]
+    assert "parakeet-pro:nvidia_parakeet-v3_494MB" in models[1]
+    assert "[active]" not in models[1]
+
+
+def test_list_models_cli_not_found(mocker, config):
+    mocker.patch(
+        "macwhisper_mcp.server.subprocess.run",
+        side_effect=FileNotFoundError("no mw"),
+    )
+    mcp = build_server(config)
+    result = _call(mcp, "list_models", {})
+    assert result.is_error
+    assert "not found" in _error_text(result)

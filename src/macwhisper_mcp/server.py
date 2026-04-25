@@ -7,6 +7,7 @@ Communicates over stdio — do NOT print to stdout anywhere. All logs go to a fi
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
 import threading
 from pathlib import Path
@@ -43,16 +44,18 @@ def build_server(config: Config | None = None) -> FastMCP:
     _watcher: list[FolderWatcher] = []  # at most one element
 
     @mcp.tool()
-    def transcribe_audio(path: str, model: str | None = None) -> str:
+    def transcribe_audio(path: str, model: str | None = None, persist: bool = False) -> str:
         """Transcribe a local audio file using MacWhisper and return the transcript.
 
         Args:
             path: Absolute path to an audio file inside the configured allow-list.
                 Supported formats: m4a, mp3, mp4, mov, wav, aiff, flac.
             model: Optional model override in MacWhisper engine:model-id format,
-                e.g. "whisperkit:openai_whisper-large-v3-v20240930" or
-                "parakeet-pro:nvidia_parakeet-v3_494MB". Defaults to the model
-                currently selected in MacWhisper.
+                e.g. "whisperkit:openai_whisper-large-v3-v20240930". Use
+                ``list_models()`` to see what is installed. Defaults to the
+                model currently selected in MacWhisper.
+            persist: If True, save the transcription to MacWhisper's history.
+                Defaults to False.
 
         Returns:
             The full transcript as plain text.
@@ -63,7 +66,7 @@ def build_server(config: Config | None = None) -> FastMCP:
             )
         _current_proc.clear()
         try:
-            return transcribe(path, config, model=model, _proc_ref=_current_proc)
+            return transcribe(path, config, model=model, persist=persist, _proc_ref=_current_proc)
         except TranscribeError:
             log.warning("transcribe_audio failed: %s", path)
             raise
@@ -79,6 +82,51 @@ def build_server(config: Config | None = None) -> FastMCP:
         _current_proc[0].kill()
         log.info("Transcription cancelled by user")
         return "Transcription cancelled."
+
+    @mcp.tool()
+    def list_models() -> list[str]:
+        """Return the transcription models installed in MacWhisper.
+
+        Each entry is formatted as ``engine:model-id — Display Name [active]``
+        where ``[active]`` marks the model currently selected in MacWhisper.
+        The ``engine:model-id`` string can be passed directly as the ``model``
+        argument to ``transcribe_audio``.
+        """
+        try:
+            result = subprocess.run(
+                [config.mw_cli, "models", "list"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=10,
+            )
+        except FileNotFoundError as e:
+            raise TranscribeError(
+                f"MacWhisper CLI '{config.mw_cli}' not found. "
+                "Open MacWhisper → Settings → Advanced → install CLI."
+            ) from e
+        except subprocess.CalledProcessError as e:
+            raise TranscribeError(
+                f"MacWhisper CLI failed: {(e.stderr or '').strip() or '(no stderr)'}"
+            ) from e
+
+        # Tabular output: first line is header; subsequent lines start with
+        # "▸ " (active model) or "  " (inactive).
+        models: list[str] = []
+        for line in result.stdout.splitlines()[1:]:
+            if not line.strip():
+                continue
+            active = line.startswith("▸")
+            parts = re.split(r"\s{2,}", line[1:].strip())
+            if not parts or not parts[0]:
+                continue
+            model_id = parts[0]
+            name = parts[1] if len(parts) > 1 else ""
+            entry = f"{model_id} — {name}" if name else model_id
+            if active:
+                entry += " [active]"
+            models.append(entry)
+        return models
 
     @mcp.tool()
     def list_allowed_paths() -> list[str]:

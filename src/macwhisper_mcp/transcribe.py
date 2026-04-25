@@ -30,6 +30,7 @@ def transcribe(
     path_str: str,
     config: Config,
     model: str | None = None,
+    persist: bool = False,
     _proc_ref: list[subprocess.Popen] | None = None,
 ) -> str:
     """Transcribe an audio file and return the transcript as text.
@@ -38,6 +39,8 @@ def transcribe(
         path_str: Path to the audio file (expanded and validated here).
         config: Server configuration (allow-list, CLI path, …).
         model: Optional model override in ``engine:model-id`` format.
+        persist: If True, pass ``--persist`` so MacWhisper saves the
+            transcription to its history database.
         _proc_ref: If provided, the live Popen object is appended here so
             callers can kill it (cancel support). Cleared on completion.
 
@@ -73,6 +76,8 @@ def transcribe(
     cmd = [config.mw_cli, "transcribe", str(resolved)]
     if model:
         cmd.extend(["--model", model])
+    if persist:
+        cmd.append("--persist")
     log.info("Transcribing %s (model=%s)", resolved, model or "default")
 
     try:

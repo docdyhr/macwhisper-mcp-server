@@ -136,3 +136,15 @@ def test_transcribe_accepts_valid_model_with_hyphens(mocker, config, audio_file)
     transcribe(str(audio_file), config, model="parakeet-pro:nvidia_parakeet-v3_494MB")
     argv = mock.call_args[0][0]
     assert "--model" in argv
+
+
+def test_transcribe_passes_persist_flag(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    transcribe(str(audio_file), config, persist=True)
+    assert "--persist" in mock.call_args[0][0]
+
+
+def test_transcribe_omits_persist_flag_by_default(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    transcribe(str(audio_file), config)
+    assert "--persist" not in mock.call_args[0][0]
