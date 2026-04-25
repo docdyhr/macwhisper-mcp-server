@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Owner:** Thomas
-**Last updated:** 2026-04-24
+**Last updated:** 2026-04-25
 
 ---
 
@@ -43,7 +43,7 @@ Secondary: other macOS MacWhisper licensees who use Claude Desktop and want a pr
 - [F2] Path allow-list: only paths within configured directories (default `~/Desktop`, `~/Transcriptions`) are accepted; all others return an access-denied error.
 - [F3] Configurable via environment variables (see `.env.example`).
 - [F4] Stdio transport for local Claude Desktop use.
-- [F5] Clear error messages for: missing `mw` CLI, missing file, denied path, transcription failure.
+- [F5] Clear error messages for: missing `mw` CLI, missing file, denied path, transcription failure. Denied-path errors must name the configured allow-list directories and, where applicable, guide the user to save the file locally (e.g. when a Claude-container path is detected).
 
 ### Should have (v1.1)
 - [F6] MCP tool `transcribe_and_summarize(path: str, language: str = "en") -> dict` — transcribe + let Claude summarize (server just returns transcript; Claude handles summarization).
@@ -116,9 +116,11 @@ Transcript (stdout) → Claude
 
 ### Remaining open questions
 
-- Should we expose a `cancel_transcription` tool for long-running jobs?
-- How to handle concurrent transcription requests — queue or reject?
+- ~~Should we expose a `cancel_transcription` tool for long-running jobs?~~ **Resolved:** `cancel_transcription()` implemented in v0.4.0 — kills the running subprocess.
+- ~~How to handle concurrent transcription requests — queue or reject?~~ **Resolved:** reject strategy via `threading.Lock` in v0.4.0.
 
 ## 12. Known limitations (engine-level, not fixable in this wrapper)
+
+- **Uploaded files in Claude Desktop.** Files dragged into the Claude chat window are placed in Claude's sandboxed container (a path outside the user's home directory). The MacWhisper CLI runs on the host Mac and cannot reach container paths. The `transcribe_audio` tool will return an access-denied error and instruct the user to save the file to Desktop, Downloads, or another allow-listed directory before retrying. Claude is also directed in the tool schema not to attempt alternative transcription methods (model download, external API) in this case.
 
 - **Danish letter-name transliteration.** When a speaker *names* the special Danish letters ("æ, ø, å"), Whisper tends to transliterate them to their closest Latin-alphabet equivalents (`E, Y, U` or similar) rather than writing the actual characters. Letters appearing *inside* words are transcribed correctly — e.g. `Blåbærgrød` renders with both `å` and `æ`. This is a MacWhisper/Whisper model behavior; document it in the README so users don't file it as a bug.

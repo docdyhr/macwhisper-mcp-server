@@ -12,8 +12,8 @@ Tracking against [PRD.md](./PRD.md).
 - [x] Scaffold repo structure
 - [x] Initialize git, commit `chore: initial scaffold`
 - [x] Create GitHub repo (private initially), push
-- [ ] Verify `mw --help` works from terminal
-- [ ] Install deps: `pip install -r requirements.txt`
+- [x] Verify `mw --help` works from terminal
+- [x] Install deps: `pip install -r requirements.txt`
 
 ## Phase 1 — MVP (v0.1.0)
 
@@ -61,19 +61,22 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 - [x] Reject null bytes in path input
 - [x] Sanitize `model` parameter with regex allow-list
 - [x] Remove allow-list from "Access denied" error messages (info disclosure)
+  - Reversed in v1.1.x: allow-list paths are now included in errors to guide the
+    user/LLM. Acceptable because the server is a single-user local tool and the
+    caller is the same person who configured the allow-list — no external adversary.
 - [x] Validate `start_watch()` folder against allow-list
 - [x] Reject symlinks in `FolderWatcher._scan()`
 - [x] Validate `MACWHISPER_LOG_PATH` is under `$HOME`
 - [x] Cap `mw` stdout at 10 MB
 - [x] 5 new security tests; all 33 tests green
 
-## Phase 6 — Release (v1.0.0)
+## Phase 6 — Release (v1.0.0 → v1.1.0)
 
-- [ ] Publish to PyPI (optional)
-- [ ] Public GitHub release with changelog
-- [ ] Blog post / README polish for public discovery
-- [ ] Consider submitting to MCP registry / awesome-mcp lists
-- [ ] Bump version to 1.0.0 in pyproject.toml and __init__.py
+- [x] Publish to PyPI (`pip install macwhisper-mcp-server`)
+- [x] Public GitHub release with changelog
+- [x] README polish for public discovery
+- [x] Submitted to MCP Registry (`io.github.docdyhr/macwhisper-mcp-server`); awesome-mcp-servers PR #5397 open
+- [x] Bumped to v1.1.0; dev version is v1.1.1.dev0
 
 ---
 
