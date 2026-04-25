@@ -9,6 +9,22 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `tests/test_server.py` — 10 new tests covering all 6 MCP tools: concurrency lock
+  rejection, lock release on exception, cancel with/without running process,
+  allow-list enforcement in `start_watch`, and watch lifecycle.
+
+### Fixed
+- `watcher.py`: apply 10 MB output size cap to watcher transcriptions, matching
+  the existing cap in `transcribe.py`.
+- `publish.yml`: publish job now requires tests to pass (new `test` job that `build`
+  depends on), preventing broken releases via `workflow_dispatch`.
+- `ci.yml`: corrected `cache-dependency-path` from stale `requirements*.txt` to
+  `pyproject.toml`.
+- `pyproject.toml`: narrowed `requires-python` from `>=3.10` to `>=3.13` to match
+  the Python version actually tested and supported.
+- `.gitignore`: added `server.json` (MCP Registry publish artifact).
+
 ---
 
 ## [1.0.1] — 2026-04-25

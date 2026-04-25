@@ -22,6 +22,8 @@ from .config import ALLOWED_EXTENSIONS, Config
 
 log = logging.getLogger(__name__)
 
+_MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # match transcribe.py cap
+
 
 @dataclass
 class WatchResult:
@@ -110,6 +112,10 @@ class FolderWatcher:
                 check=True,
                 timeout=60 * 60,
             )
+            if len(result.stdout) > _MAX_OUTPUT_BYTES:
+                raise ValueError(
+                    f"MacWhisper output exceeded size limit ({_MAX_OUTPUT_BYTES // 1_000_000} MB)."
+                )
             transcript = result.stdout.strip()
             dest = self.done_dir / path.name
             processing.rename(dest)
