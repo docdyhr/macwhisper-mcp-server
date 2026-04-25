@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macwhisper-mcp-server"
-version = "0.5.0"
+version = "1.0.0"
 description = "Local MCP server exposing MacWhisper transcription to Claude Desktop."
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
@@ -12,7 +12,7 @@ license = { text = "MIT" }
 authors = [{ name = "Thomas" }]
 keywords = ["mcp", "macwhisper", "transcription", "claude", "llm"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: MacOS X",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",

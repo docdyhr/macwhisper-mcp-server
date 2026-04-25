@@ -7,7 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [0.5.0] — 2026-04-24
+## [Unreleased]
+
+---
+
+## [1.0.0] — 2026-04-25
+
+First stable public release. All five development phases complete: MVP → hardening
+→ structured output → ergonomics → security. 7 MCP tools, 33 tests, fully local.
 
 ### Security
 
@@ -29,10 +36,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   paths outside the user's home directory to prevent log-file hijacking.
 - **Output size cap.** `transcribe()` raises `TranscribeError` if `mw` stdout exceeds
   10 MB, guarding against runaway output consuming memory.
-
----
-
-## [Unreleased]
 
 ---
 
