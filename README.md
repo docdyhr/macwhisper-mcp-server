@@ -161,6 +161,7 @@ See [PRD §7](./PRD.md) for the full threat model.
 
 ## Known limitations
 
+- **Uploaded files:** Files dragged into the Claude chat window live in Claude's container and are not accessible to the local MacWhisper CLI. Save the file to your Desktop or Downloads folder (or another allow-listed directory), then ask Claude to transcribe it from there.
 - **Danish letter names:** Whisper may phonetically approximate letter names (e.g. "Æ, Ø, Å" → "E, Y, U") when they are spoken in isolation. Letters *inside words* transcribe correctly. This is a Whisper engine limitation, not a bug in this wrapper. See [PRD §12](./PRD.md).
 - **Cold-start latency:** First transcription after MacWhisper launches takes ~13s (model load). Subsequent calls are ~2s.
 

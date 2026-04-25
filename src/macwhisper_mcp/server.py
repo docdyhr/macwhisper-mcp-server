@@ -52,6 +52,11 @@ def build_server(config: Config | None = None) -> FastMCP:
         to the Claude chat window are NOT accessible — ask the user to save the file
         to their Desktop or Downloads folder first.
 
+        If this tool returns an access-denied error, do NOT attempt to transcribe the
+        file by any other means (e.g. downloading a model, calling an external API, or
+        using in-process speech recognition). Simply tell the user to save the file
+        locally and retry with this tool.
+
         Args:
             path: Absolute or ``~``-prefixed path to an audio file on the local Mac
                 filesystem inside the configured allow-list.
@@ -154,7 +159,12 @@ def build_server(config: Config | None = None) -> FastMCP:
             return f"Already watching {_watcher[0].incoming}. Call stop_watch() first."
         incoming = Path(folder).expanduser().resolve()
         if not any(incoming == base or base in incoming.parents for base in config.allowed_paths):
-            raise TranscribeError("Access denied: folder is outside the configured allow-list.")
+            allowed = ", ".join(str(p) for p in config.allowed_paths)
+            raise TranscribeError(
+                f"Access denied: '{incoming}' is outside the configured allow-list "
+                f"({allowed}). Add the folder to MACWHISPER_ALLOWED_PATHS in "
+                "claude_desktop_config.json and restart Claude Desktop."
+            )
         w = FolderWatcher(incoming, config)
         w.start()
         if _watcher:
