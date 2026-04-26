@@ -67,9 +67,11 @@ def transcribe(
     if not config.is_path_allowed(resolved):
         allowed = ", ".join(str(p) for p in config.allowed_paths)
         raise TranscribeError(
-            f"Access denied: '{resolved.name}' is outside the configured allow-list "
-            f"({allowed}). If this file was uploaded to Claude, save it to your Desktop "
-            "or Downloads folder first, then ask Claude to transcribe it from there."
+            f"Access denied: '{resolved}' is outside the configured allow-list "
+            f"({allowed}). If this file was uploaded to Claude, save it to one of "
+            "the listed folders first. Otherwise, add its directory to "
+            "MACWHISPER_ALLOWED_PATHS in claude_desktop_config.json and restart "
+            "Claude Desktop."
         )
 
     if model is not None and not _MODEL_RE.fullmatch(model):

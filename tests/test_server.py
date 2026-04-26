@@ -232,7 +232,9 @@ def test_start_watch_rejects_path_outside_allow_list(config, tmp_path):
     mcp = build_server(config)
     result = _call(mcp, "start_watch", {"folder": str(outside)})
     assert result.is_error
-    assert "Access denied" in _error_text(result)
+    error = _error_text(result)
+    assert "Access denied" in error
+    assert str(config.allowed_paths[0]) in error
 
 
 # ---------------------------------------------------------------------------

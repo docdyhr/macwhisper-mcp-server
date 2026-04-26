@@ -54,8 +54,9 @@ def test_transcribe_rejects_unsupported_extension(config, allowed_dir):
 def test_transcribe_rejects_path_outside_allow_list(config, tmp_path):
     outside = tmp_path / "outside.m4a"
     outside.write_bytes(b"x")
-    with pytest.raises(TranscribeError, match="Access denied"):
+    with pytest.raises(TranscribeError, match="Access denied") as exc_info:
         transcribe(str(outside), config)
+    assert str(config.allowed_paths[0]) in str(exc_info.value)
 
 
 def test_transcribe_reports_missing_cli(mocker, config, audio_file):

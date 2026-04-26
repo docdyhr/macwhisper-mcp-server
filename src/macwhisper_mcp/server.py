@@ -163,7 +163,8 @@ def build_server(config: Config | None = None) -> FastMCP:
             raise TranscribeError(
                 f"Access denied: '{incoming}' is outside the configured allow-list "
                 f"({allowed}). Add the folder to MACWHISPER_ALLOWED_PATHS in "
-                "claude_desktop_config.json and restart Claude Desktop."
+                "~/Library/Application Support/Claude/claude_desktop_config.json "
+                "and restart Claude Desktop."
             )
         w = FolderWatcher(incoming, config)
         w.start()
