@@ -48,6 +48,23 @@ After installation, enable the CLI in MacWhisper Settings as above. When you lat
 
 ## Install
 
+### Option A — Homebrew (recommended)
+
+```bash
+brew tap docdyhr/tap
+brew install docdyhr/tap/macwhisper-mcp-server
+```
+
+This installs the `macwhisper-mcp` binary into your Homebrew prefix. Upgrade later with `brew upgrade docdyhr/tap/macwhisper-mcp-server`.
+
+### Option B — pip / source
+
+```bash
+pip install macwhisper-mcp-server
+```
+
+Or from source:
+
 ```bash
 git clone https://github.com/docdyhr/macwhisper-mcp-server.git
 cd macwhisper-mcp-server
@@ -75,10 +92,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add:
 {
   "mcpServers": {
     "macwhisper": {
-      "command": "/Users/<you>/macwhisper-mcp-server/.venv/bin/macwhisper-mcp",
+      "command": "macwhisper-mcp",
       "args": [],
       "env": {
-        "MACWHISPER_ALLOWED_PATHS": "/Users/<you>/Desktop:/Users/<you>/Downloads",
+        "MACWHISPER_ALLOWED_PATHS": "~/Desktop:~/Downloads",
         "FASTMCP_CHECK_FOR_UPDATES": "off"
       }
     }
@@ -86,7 +103,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add:
 }
 ```
 
-Replace `<you>` with your macOS username. Restart Claude Desktop.
+Restart Claude Desktop.
 
 > **Note:** Audio files must be saved to your Mac's filesystem (Desktop, Downloads, or another allow-listed folder) before asking Claude to transcribe them. Files uploaded directly to the Claude chat window live in Claude's container and are not accessible to the local MacWhisper CLI.
 
