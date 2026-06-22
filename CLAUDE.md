@@ -6,9 +6,9 @@ Context for Claude Code working on this repo. Read this first.
 
 A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) transcription to Claude Desktop. Audio → MacWhisper → MCP → Claude. Fully local, fully private. See [PRD.md](./PRD.md) for the full spec and [TODO.md](./TODO.md) for the roadmap.
 
-## Current status (2026-06-11)
+## Current status (2026-06-23)
 
-**v1.1.0 — 8 MCP tools, 48 tests green. Repo public. Published on PyPI and MCP Registry. Next: v1.1.1.dev0.**
+**v1.1.1 — 8 MCP tools, 48 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`). Next: v1.2.0.dev0.**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.2`
