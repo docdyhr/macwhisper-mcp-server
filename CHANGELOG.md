@@ -11,6 +11,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.1] — 2026-06-23
+
+### Changed
+- **fastmcp bumped 3.2.4 → 3.4.2.** No API changes affect this server; the bump
+  picks up upstream bug fixes and performance improvements.
+
+### Fixed
+- Access-denied error messages now include the allow-listed paths so the LLM
+  (and user) understand why a path was rejected without requiring a separate
+  `list_allowed_paths()` call.
+- `transcribe_audio` tool description clarifies that files must be on the local
+  filesystem, not in Claude's container — suppresses a common LLM fallback.
+- Disabled FastMCP's built-in update-check nag on server startup
+  (`FASTMCP_CHECK_FOR_UPDATES=off` is no longer required in the Claude Desktop
+  config; the server sets it internally).
+- CodeQL CI workflow now triggers on the correct branch (`main`).
+
+### Documentation
+- Added Homebrew tap as the recommended install method:
+  `brew tap docdyhr/tap && brew install docdyhr/tap/macwhisper-mcp-server`
+- Claude Desktop config simplified: `"command": "macwhisper-mcp"` (no hardcoded
+  venv path) when installed via Homebrew or `pip install`.
+- Allowed-paths env var example now uses `~/` shorthand instead of `/Users/<you>/`.
+- MIT `LICENSE` file added to repo root.
+
+---
+
 ## [1.1.0] — 2026-04-25
 
 ### Added
