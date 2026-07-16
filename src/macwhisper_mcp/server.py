@@ -28,7 +28,7 @@ def _setup_logging(config: Config) -> None:
     )
 
 
-def build_server(config: Config | None = None) -> FastMCP:
+def build_server(config: Config | None = None, _proc_state: list | None = None) -> FastMCP:
     config = config or Config.from_env()
     _setup_logging(config)
     log = logging.getLogger(__name__)
@@ -38,7 +38,10 @@ def build_server(config: Config | None = None) -> FastMCP:
 
     # --- concurrency + cancel state ---
     _transcribe_lock = threading.Lock()
-    _current_proc: list[subprocess.Popen] = []  # at most one element
+    # The live Popen (at most one element) so cancel_transcription can kill it.
+    # ``_proc_state`` is only a test seam for injecting a racy list; production
+    # always passes None and gets a fresh plain list.
+    _current_proc: list[subprocess.Popen] = _proc_state if _proc_state is not None else []
 
     # --- watch-folder state ---
     _watcher: list[FolderWatcher] = []  # at most one element
@@ -88,9 +91,17 @@ def build_server(config: Config | None = None) -> FastMCP:
     @mcp.tool()
     def cancel_transcription() -> str:
         """Cancel the currently running transcription, if any."""
-        if not _current_proc:
+        # Single atomic subscript (no check-then-index): ``list.__getitem__``
+        # is one CPython opcode, so the list cannot be cleared by the finishing
+        # transcription between a truthiness check and the index. The previous
+        # ``if not _current_proc: ... _current_proc[0]`` form could IndexError
+        # when the running transcription's finally block cleared the list in the
+        # gap between those two opcodes.
+        try:
+            proc = _current_proc[0]
+        except IndexError:
             return "No transcription is currently running."
-        _current_proc[0].kill()
+        proc.kill()
         log.info("Transcription cancelled by user")
         return "Transcription cancelled."
 
@@ -149,8 +160,11 @@ def build_server(config: Config | None = None) -> FastMCP:
         """Start watching a folder for new audio files to auto-transcribe.
 
         New audio files dropped into ``folder`` are transcribed automatically
-        and moved to ``<folder>/../done/``. Call ``get_watch_results()`` to
-        retrieve completed transcriptions.
+        and moved to a "done" directory. By default this is ``<folder>/../done``;
+        override it with the ``MACWHISPER_WATCH_DONE_DIR`` env var. Both the
+        incoming folder and the done directory must be inside the configured
+        allow-list, otherwise the call is rejected. Call ``get_watch_results()``
+        to retrieve completed transcriptions.
 
         Args:
             folder: Absolute or ``~``-prefixed path to the incoming directory.
@@ -166,7 +180,20 @@ def build_server(config: Config | None = None) -> FastMCP:
                 "~/Library/Application Support/Claude/claude_desktop_config.json "
                 "and restart Claude Desktop."
             )
-        w = FolderWatcher(incoming, config)
+        # The done dir must also be inside the allow-list so the watcher never
+        # silently writes outside what the user permitted. Default is a sibling
+        # of the incoming folder; MACWHISPER_WATCH_DONE_DIR overrides it.
+        done_dir = (
+            config.watch_done_dir if config.watch_done_dir is not None else incoming.parent / "done"
+        )
+        if not config.is_path_allowed(done_dir, strict=False):
+            allowed = ", ".join(str(p) for p in config.allowed_paths)
+            raise TranscribeError(
+                f"Access denied: done directory '{done_dir}' is outside the configured "
+                f"allow-list ({allowed}). Set MACWHISPER_WATCH_DONE_DIR to a folder inside "
+                "the allow-list (or widen MACWHISPER_ALLOWED_PATHS) and restart Claude Desktop."
+            )
+        w = FolderWatcher(incoming, config, done_dir=done_dir)
         w.start()
         if _watcher:
             _watcher[0] = w

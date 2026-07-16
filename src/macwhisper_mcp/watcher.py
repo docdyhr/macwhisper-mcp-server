@@ -18,11 +18,9 @@ import threading
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .config import ALLOWED_EXTENSIONS, Config
+from .config import ALLOWED_EXTENSIONS, MAX_OUTPUT_BYTES, Config
 
 log = logging.getLogger(__name__)
-
-_MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # match transcribe.py cap
 
 
 @dataclass
@@ -36,9 +34,19 @@ class WatchResult:
 class FolderWatcher:
     """Watches an ``incoming`` directory and transcribes new audio files."""
 
-    def __init__(self, incoming: Path, config: Config, poll_interval: float = 2.0) -> None:
+    def __init__(
+        self,
+        incoming: Path,
+        config: Config,
+        poll_interval: float = 2.0,
+        done_dir: Path | None = None,
+    ) -> None:
         self.incoming = incoming.resolve()
-        self.done_dir = self.incoming.parent / "done"
+        # Default to a sibling "done" dir; callers (start_watch) may override
+        # via Config.watch_done_dir and must validate it against the allow-list.
+        self.done_dir = (
+            done_dir.expanduser().resolve() if done_dir else self.incoming.parent / "done"
+        )
         self.config = config
         self.poll_interval = poll_interval
         self._thread: threading.Thread | None = None
@@ -112,9 +120,9 @@ class FolderWatcher:
                 check=True,
                 timeout=60 * 60,
             )
-            if len(result.stdout) > _MAX_OUTPUT_BYTES:
+            if len(result.stdout) > MAX_OUTPUT_BYTES:
                 raise ValueError(
-                    f"MacWhisper output exceeded size limit ({_MAX_OUTPUT_BYTES // 1_000_000} MB)."
+                    f"MacWhisper output exceeded size limit ({MAX_OUTPUT_BYTES // 1_000_000} MB)."
                 )
             transcript = result.stdout.strip()
             dest = self.done_dir / path.name

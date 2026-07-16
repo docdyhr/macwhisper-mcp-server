@@ -9,6 +9,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- `cancel_transcription` no longer raises `IndexError` (surfaced to the client
+  as an error) when the running transcription finishes and clears the proc
+  list in the gap between cancel's non-empty check and its subscript. Cancel
+  now uses a single atomic subscript and degrades to "no transcription
+  running" instead.
+- `__version__` is now read from the installed distribution metadata instead of
+  a hardcoded literal, so it can no longer drift from `pyproject.toml` on
+  semantic-release bumps.
+- `start_watch` now rejects a watch session when the "done" directory falls
+  outside the configured allow-list (previously it silently wrote there). The
+  done directory is overridable via the new `MACWHISPER_WATCH_DONE_DIR` env
+  var; the default remains `<incoming>/../done`.
+
+### Changed
+- The 10 MB output cap is now a single shared `MAX_OUTPUT_BYTES` constant in
+  `config.py`, imported by `transcribe.py` and `watcher.py` so the two paths
+  can never enforce different limits.
+
 ---
 
 ## [1.1.1] — 2026-06-23

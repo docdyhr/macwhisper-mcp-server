@@ -149,3 +149,11 @@ def test_transcribe_omits_persist_flag_by_default(mocker, config, audio_file):
     mock, _ = _mock_popen(mocker)
     transcribe(str(audio_file), config)
     assert "--persist" not in mock.call_args[0][0]
+
+
+def test_transcribe_rejects_oversized_output(mocker, config, audio_file):
+    """Runaway mw output above MAX_OUTPUT_BYTES is rejected (shared constant)."""
+    _mock_popen(mocker, stdout="x" * 100)
+    mocker.patch("macwhisper_mcp.transcribe.MAX_OUTPUT_BYTES", 10)
+    with pytest.raises(TranscribeError, match="exceeded size limit"):
+        transcribe(str(audio_file), config)

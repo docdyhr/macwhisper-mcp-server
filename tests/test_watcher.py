@@ -131,3 +131,27 @@ def test_watcher_skips_symlinks(mocker, incoming, watch_config, tmp_path):
 
     mock.assert_not_called()
     assert watcher.drain_results() == []
+
+
+def test_watcher_uses_custom_done_dir(mocker, incoming, watch_config, tmp_path):
+    """An explicit done_dir overrides the default sibling location."""
+    _mock_watcher_popen(mocker)
+    custom_done = tmp_path / "custom_done"
+    audio = incoming / "clip.m4a"
+    audio.write_bytes(b"x")
+
+    watcher = FolderWatcher(incoming, watch_config, poll_interval=0.1, done_dir=custom_done)
+    assert watcher.done_dir == custom_done.resolve()
+    watcher.start()
+    time.sleep(0.4)
+    watcher.stop()
+
+    results = watcher.drain_results()
+    assert len(results) == 1
+    assert results[0]["error"] is None
+    assert (custom_done / "clip.m4a").exists()
+
+
+def test_watcher_done_dir_defaults_to_sibling(incoming, watch_config):
+    watcher = FolderWatcher(incoming, watch_config, poll_interval=0.1)
+    assert watcher.done_dir == incoming.resolve().parent / "done"

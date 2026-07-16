@@ -19,12 +19,21 @@ ALLOWED_EXTENSIONS: frozenset[str] = frozenset(
     {".m4a", ".mp3", ".mp4", ".mov", ".wav", ".aiff", ".flac"}
 )
 
+# Hard cap on MacWhisper stdout to guard against runaway output.
+# Shared by transcribe.py and watcher.py — import from here rather than
+# redefining, so the two paths can never drift apart.
+MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # 10 MB
+
 
 @dataclass(frozen=True)
 class Config:
     allowed_paths: tuple[Path, ...]
     mw_cli: str = DEFAULT_CLI
     log_path: Path = field(default_factory=lambda: Path(DEFAULT_LOG_PATH))
+    # Optional override for the watcher's "done" directory. When None, the
+    # watcher defaults to <incoming>/../done (validated against the allow-list
+    # in start_watch so it can never silently write outside it).
+    watch_done_dir: Path | None = None
 
     @classmethod
     def from_env(cls) -> Config:
@@ -42,20 +51,34 @@ class Config:
                 f"MACWHISPER_LOG_PATH must be inside your home directory ({home}). Got: {log_path}"
             )
 
+        watch_done_dir_raw = os.environ.get("MACWHISPER_WATCH_DONE_DIR")
+        watch_done_dir = (
+            Path(watch_done_dir_raw).expanduser().resolve() if watch_done_dir_raw else None
+        )
+
         return cls(
             allowed_paths=allowed,
             mw_cli=os.environ.get("MACWHISPER_CLI", DEFAULT_CLI),
             log_path=log_path,
+            watch_done_dir=watch_done_dir,
         )
 
-    def is_path_allowed(self, path: Path) -> bool:
+    def is_path_allowed(self, path: Path, strict: bool = True) -> bool:
         """True if `path` resolves inside any of the allow-listed directories.
 
         Uses `Path.resolve()` to follow symlinks before the prefix check, so a symlink
         inside an allowed dir pointing outside is still rejected.
+
+        Args:
+            path: The path to check.
+            strict: When True (default, for existing files) require the path to
+                exist — a missing file is rejected. When False, allow a
+                not-yet-created path (used for the watcher's ``done`` dir, which
+                is validated before it is created). Symlinks are still followed
+                and an escaping symlink is rejected either way.
         """
         try:
-            resolved = path.resolve(strict=True)
+            resolved = path.resolve(strict=strict)
         except (FileNotFoundError, RuntimeError):
             return False
         return any(resolved == base or base in resolved.parents for base in self.allowed_paths)

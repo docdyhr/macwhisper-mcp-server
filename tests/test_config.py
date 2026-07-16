@@ -72,3 +72,39 @@ def test_from_env_rejects_log_path_outside_home(tmp_path, monkeypatch):
     monkeypatch.setenv("MACWHISPER_LOG_PATH", "/etc/macwhisper.log")
     with pytest.raises(ValueError, match="MACWHISPER_LOG_PATH"):
         Config.from_env()
+
+
+def test_from_env_loads_watch_done_dir(tmp_path, monkeypatch):
+    a = tmp_path / "a"
+    a.mkdir()
+    done = tmp_path / "done"
+    monkeypatch.setenv("MACWHISPER_ALLOWED_PATHS", str(a))
+    monkeypatch.setenv("MACWHISPER_CLI", "mw")
+    monkeypatch.setenv("MACWHISPER_WATCH_DONE_DIR", str(done))
+    cfg = Config.from_env()
+    assert cfg.watch_done_dir == done.resolve()
+
+
+def test_from_env_watch_done_dir_defaults_none(tmp_path, monkeypatch):
+    a = tmp_path / "a"
+    a.mkdir()
+    monkeypatch.setenv("MACWHISPER_ALLOWED_PATHS", str(a))
+    monkeypatch.setenv("MACWHISPER_CLI", "mw")
+    monkeypatch.delenv("MACWHISPER_WATCH_DONE_DIR", raising=False)
+    cfg = Config.from_env()
+    assert cfg.watch_done_dir is None
+
+
+def test_is_path_allowed_nonstrict_accepts_nonexistent_inside_allow_list(config, allowed_dir):
+    """strict=False lets a not-yet-created path inside an allowed root pass
+    (used for the watcher's done dir before it is created)."""
+    assert config.is_path_allowed(allowed_dir / "done", strict=False) is True
+
+
+def test_is_path_allowed_nonstrict_rejects_outside(config, tmp_path):
+    assert config.is_path_allowed(tmp_path / "elsewhere" / "done", strict=False) is False
+
+
+def test_is_path_allowed_strict_rejects_nonexistent(config, allowed_dir):
+    """strict=True (default) rejects a missing file — preserves transcribe behavior."""
+    assert config.is_path_allowed(allowed_dir / "nope.m4a", strict=True) is False

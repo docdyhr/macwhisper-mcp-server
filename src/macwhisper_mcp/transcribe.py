@@ -11,15 +11,12 @@ import re
 import subprocess
 from pathlib import Path
 
-from .config import ALLOWED_EXTENSIONS, Config
+from .config import ALLOWED_EXTENSIONS, MAX_OUTPUT_BYTES, Config
 
 log = logging.getLogger(__name__)
 
 # Allowed characters in a model identifier (engine:model-id format).
 _MODEL_RE = re.compile(r"[a-zA-Z0-9_:.-]+")
-
-# Hard cap on mw stdout to guard against runaway output.
-_MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 class TranscribeError(Exception):
@@ -117,9 +114,9 @@ def transcribe(
         err = (stderr or "").strip() or "(no stderr)"
         raise TranscribeError(f"MacWhisper CLI failed (exit {proc.returncode}): {err}")
 
-    if len(stdout) > _MAX_OUTPUT_BYTES:
+    if len(stdout) > MAX_OUTPUT_BYTES:
         raise TranscribeError(
-            f"MacWhisper output exceeded size limit ({_MAX_OUTPUT_BYTES // 1_000_000} MB)."
+            f"MacWhisper output exceeded size limit ({MAX_OUTPUT_BYTES // 1_000_000} MB)."
         )
 
     transcript = stdout.strip()
