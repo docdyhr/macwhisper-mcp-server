@@ -329,3 +329,84 @@ def test_list_models_cli_not_found(mocker, config):
     result = _call(mcp, "list_models", {})
     assert result.is_error
     assert "not found" in _error_text(result)
+
+
+# ---------------------------------------------------------------------------
+# cancel_transcription — regression: no IndexError when proc list is cleared mid-read
+# ---------------------------------------------------------------------------
+
+
+def test_cancel_handles_proc_cleared_mid_read(tmp_path):
+    """Regression for the check-then-index race.
+
+    The old ``if not _current_proc: ... _current_proc[0]`` form raised
+    ``IndexError`` (surfaced to the client as an error) when the running
+    transcription's finally block cleared ``_current_proc`` in the gap between
+    the truthiness check and the subscript. We simulate that by injecting a
+    list that empties itself on ``__getitem__`` — exactly the state the race
+    produces — and assert cancel degrades gracefully instead of erroring.
+    """
+
+    class _RacyList(list):
+        def __getitem__(self, index):
+            # Emulate the finishing transcription clearing the list between
+            # cancel's truthiness check and its index access.
+            self.clear()
+            return super().__getitem__(index)
+
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    cfg = Config(
+        allowed_paths=(allowed.resolve(),),
+        mw_cli="mw",
+        log_path=tmp_path / "test.log",
+    )
+    proc_state = _RacyList([MagicMock()])  # non-empty so the check would pass
+    mcp = build_server(cfg, _proc_state=proc_state)
+
+    result = _call(mcp, "cancel_transcription", {})
+    assert not result.is_error
+    assert "No transcription" in result.data
+
+
+# ---------------------------------------------------------------------------
+# start_watch — done directory must be inside the allow-list
+# ---------------------------------------------------------------------------
+
+
+def test_start_watch_rejects_done_dir_outside_allow_list(tmp_path):
+    """When the allow-list is exactly the incoming folder, the default done dir
+    (incoming.parent/done) falls outside it and must be rejected rather than
+    silently written to."""
+    incoming = tmp_path / "incoming"
+    incoming.mkdir()
+    cfg = Config(
+        allowed_paths=(incoming.resolve(),),
+        mw_cli="mw",
+        log_path=tmp_path / "test.log",
+    )
+    mcp = build_server(cfg)
+    result = _call(mcp, "start_watch", {"folder": str(incoming)})
+    assert result.is_error
+    assert "done directory" in _error_text(result)
+
+
+def test_start_watch_accepts_configured_done_dir_inside_allow_list(tmp_path):
+    """MACWHISPER_WATCH_DONE_DIR (via Config.watch_done_dir) overrides the
+    default and is accepted when inside the allow-list."""
+    incoming = tmp_path / "incoming"
+    incoming.mkdir()
+    done = tmp_path / "done"  # both under tmp_path, which we allow-list
+    cfg = Config(
+        allowed_paths=(tmp_path.resolve(),),
+        mw_cli="mw",
+        log_path=tmp_path / "test.log",
+        watch_done_dir=done.resolve(),
+    )
+    mcp = build_server(cfg)
+    try:
+        result = _call(mcp, "start_watch", {"folder": str(incoming)})
+        assert not result.is_error
+        assert "Watching" in result.data
+    finally:
+        _call(mcp, "stop_watch", {})
