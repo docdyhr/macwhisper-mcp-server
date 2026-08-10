@@ -11,7 +11,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 **v1.2.0.dev0 — 8 MCP tools, 61 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
-- Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.4`
+- Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.6`
 - Package imports cleanly (`macwhisper_mcp.{config,transcribe,server,watcher}`)
 - MacWhisper 13.20 (1410) installed via `brew install --cask macwhisper`
 - CLI at `/usr/local/bin/mw` (symlink → `/Applications/MacWhisper.app/Contents/MacOS/mw`); `mw` is on PATH. `config.py` auto-detects the app-bundle path and uses it directly.
@@ -64,7 +64,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 2. **Path allow-list with symlink resolution.** `Config.is_path_allowed` calls `Path.resolve(strict=True)` before the prefix check, so a symlink inside an allowed dir pointing outside is rejected. Test: `test_is_path_allowed_rejects_symlink_escape`.
 3. **File-extension allow-list.** Only audio/video extensions in `ALLOWED_EXTENSIONS` reach the CLI.
 4. **Logs go to a file, never stdout.** Stdout is reserved for MCP JSON-RPC. `server._setup_logging` uses `logging.basicConfig(filename=...)`. Never add `print()` to the server path.
-5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==3.4.4`.
+5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==3.4.6`.
 
 ## Known quirks
 
