@@ -8,7 +8,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-07-15)
 
-**v1.2.0.dev0 — 8 MCP tools, 61 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
+**v1.2.0.dev0 — 7 MCP tools, 61 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.6`
