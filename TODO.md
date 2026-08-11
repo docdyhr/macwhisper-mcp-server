@@ -82,7 +82,7 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 
 ## Backlog / ideas
 
-- DMG installer or Homebrew tap for non-technical users
+- DMG installer for non-technical users (Homebrew tap already shipped — `docdyhr/tap`)
 - Menu-bar app wrapping the server (start/stop, log viewer)
 - Alternative engine support (whisper.cpp) behind same MCP interface
 - Per-directory language defaults (e.g. `~/Desktop/DK/` → force Danish)

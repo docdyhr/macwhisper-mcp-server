@@ -6,7 +6,7 @@ Context for Claude Code working on this repo. Read this first.
 
 A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) transcription to Claude Desktop. Audio → MacWhisper → MCP → Claude. Fully local, fully private. See [PRD.md](./PRD.md) for the full spec and [TODO.md](./TODO.md) for the roadmap.
 
-## Current status (2026-07-15)
+## Current status (2026-08-11)
 
 **v1.2.0.dev0 — 7 MCP tools, 61 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
@@ -47,7 +47,7 @@ src/macwhisper_mcp/
 ├── config.py        # Env loading, path allow-list, CLI auto-detection
 ├── transcribe.py    # Subprocess wrapper around `mw transcribe <file>`
 ├── watcher.py       # Background folder-watcher, FolderWatcher class
-└── server.py        # FastMCP entry point, all 8 tool definitions
+└── server.py        # FastMCP entry point, all 7 tool definitions
 tests/
 ├── conftest.py          # Fixtures: allowed_dir, audio_file, config
 ├── test_config.py       # Config + allow-list tests
@@ -71,7 +71,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 - `mw` is on PATH at `/usr/local/bin/mw` (symlink → app bundle) when the CLI is installed via MacWhisper → Settings → Advanced → Install. `config.py` prefers the explicit app-bundle path; `MACWHISPER_CLI=mw` also works now. When MacWhisper is upgraded via `brew upgrade --cask macwhisper`, the symlink stays valid — no re-install needed.
 - `mw transcribe <file>` prints the full transcript to stdout when `--stream` is not passed. We rely on this; do not add `--stream` without rewriting the stdout handling in `transcribe.py`.
 - `mw models list` output is space-padded tabular text (not JSON). `list_models()` in `server.py` parses it with `re.split(r"\s{2,}", ...)`.
-- `FastMCP("macwhisper")` reports its own version (`3.2.4`) in `serverInfo`, not our package version. Cosmetic only — fix by passing `version=__version__` when we care about it.
+- `FastMCP("macwhisper")` reports fastmcp's own version in `serverInfo`, not our package version — currently `3.4.6`, tracking whatever `fastmcp` is pinned to. Cosmetic only — fix by passing `version=__version__` when we care about it.
 - CI runs on `macos-latest` only — Linux runners don't have MacWhisper anyway, and mocks cover the subprocess layer.
 
 ## Conventions
@@ -81,13 +81,8 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 - Tests: `pytest` with `pytest-mock`. Mock `subprocess.Popen` at `macwhisper_mcp.transcribe.subprocess.Popen` and `subprocess.run` at `macwhisper_mcp.server.subprocess.run` / `macwhisper_mcp.watcher.subprocess.run` — always at the module that uses it, never at stdlib level.
 - Commit style: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`).
 - When adding an MCP tool: define it inside `build_server()` so it closes over `config`. Always wrap user-facing errors in `TranscribeError` (or a new domain exception) — raw stdlib exceptions leak implementation details.
-
-## Next actions for Claude Code
-
-1. Run the first live transcription **from inside Claude Desktop** on a file in `~/Desktop` or `~/Downloads`. Log the result as a new entry in `docs/live-tests.md` using the same format.
-2. After any user-facing change, bump the version (semver patch/minor) and run `/release`.
-
-**Live test logging protocol.** Any end-to-end test against the running server — synthetic client, Claude Desktop, future smoke-test script, anything — gets a new entry appended to [`docs/live-tests.md`](./docs/live-tests.md). One entry per distinct run. Do not overwrite old entries; they are the regression record.
+- After any user-facing change, bump the version (semver patch/minor) and run `/release`.
+- **Live test logging protocol.** Any end-to-end test against the running server — synthetic client, Claude Desktop, future smoke-test script, anything — gets a new entry appended to [`docs/live-tests.md`](./docs/live-tests.md). One entry per distinct run. Do not overwrite old entries; they are the regression record.
 
 ## Things to NOT do
 
