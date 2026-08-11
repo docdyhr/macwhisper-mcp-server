@@ -19,8 +19,15 @@ Expose MacWhisper as a local MCP tool so Claude Desktop can transcribe audio and
 ## 3. Non-goals
 
 - Cloud transcription or remote hosting
-- Replacing MacWhisper's UI (it remains the engine; this is a thin wrapper)
-- Supporting non-macOS platforms (MacWhisper is macOS-only)
+- Replacing MacWhisper's UI. MacWhisper remains the default engine and this
+  server remains a thin wrapper around it. **Revised 2026-08-11:** an
+  independent `whisper-cpp` engine is now supported as an explicit, opt-in
+  secondary backend (`engine="whisper-cpp"` on `transcribe_audio`) for users
+  who want a fully local path that doesn't require a MacWhisper license — it
+  does not touch or depend on MacWhisper in any way. See §8.
+- Supporting non-macOS platforms (MacWhisper is macOS-only; the whisper-cpp
+  engine is cross-platform upstream, but this server itself is still
+  macOS-only per §4/README)
 - Real-time / streaming transcription (batch files only, v1)
 - Multi-user / shared server deployment
 
@@ -53,7 +60,12 @@ Secondary: other macOS MacWhisper licensees who use Claude Desktop and want a pr
 ### Nice to have (v2+)
 - [F9] Structured output (JSON with segments, timestamps, speaker labels if MacWhisper supports them).
 - [F10] Watch-folder mode: auto-transcribe new files in a given directory.
-- [F11] Language selection passed through to `mw` CLI.
+- [x] [F11] Language selection passed through to `mw` CLI — done: explicit `language`
+      argument on `transcribe_audio`, plus optional per-directory defaults via
+      `MACWHISPER_LANGUAGE_DEFAULTS`. See §11 for the corrected CLI capability note.
+- [x] [F12] Alternative engine (whisper-cpp) independent of MacWhisper — done:
+      `engine="whisper-cpp"` on `transcribe_audio`, backed by a standalone
+      `whisper-cli` binary. v1 scope: wav/mp3/flac input only (see §3, §11).
 
 ## 7. Non-functional requirements
 
@@ -66,19 +78,29 @@ Secondary: other macOS MacWhisper licensees who use Claude Desktop and want a pr
 ## 8. Architecture
 
 ```
-Claude Desktop
-    ↓ MCP (stdio, JSON-RPC)
-macwhisper-mcp-server (Python, fastmcp)
-    ↓ subprocess (argv list, no shell)
-mw CLI (MacWhisper)
-    ↓
-Transcript (stdout) → Claude
+                        Claude Desktop
+                             ↓ MCP (stdio, JSON-RPC)
+                  macwhisper-mcp-server (Python, fastmcp)
+                             ↓ transcribe.py: validate path/model/language,
+                               dispatch to the requested engine (engines.py)
+                ┌────────────────────────┴────────────────────────┐
+                ↓ subprocess (argv list, no shell)                 ↓ subprocess (argv list, no shell)
+          mw CLI (MacWhisper)                              whisper-cli (whisper.cpp)
+       engine="macwhisper" (default)                       engine="whisper-cpp" (opt-in)
+                ↓                                                  ↓
+        Transcript (stdout) → Claude                       Transcript (stdout) → Claude
 ```
+
+whisper-cpp is a fully independent backend — it does not go through MacWhisper
+or share any state with it beyond the audio file and the allow-list/extension
+validation in `transcribe.py`, which applies to both engines identically.
 
 **Stack:**
 - Python 3.13.13 (managed by pyenv)
-- `fastmcp==3.2.4` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
+- `fastmcp==3.4.6` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
 - stdlib only for everything else (`subprocess`, `pathlib`, `os`)
+- Optional: `whisper-cpp` (Homebrew formula `whisper-cpp`, binary `whisper-cli`) for the
+  whisper-cpp engine — not a Python dependency, invoked as an external CLI like `mw`
 
 ## 9. Success criteria
 
@@ -97,27 +119,74 @@ Transcript (stdout) → Claude
 | Path allow-list bypassed via symlink | Low | High | Resolve symlinks with `Path.resolve(strict=True)` before prefix check |
 | Large audio files exceed MCP response size | Low | Medium | Return transcript as file reference if > N chars (v2) |
 | Claude Desktop loses connection mid-transcription | Low | Low | MCP handles reconnect; log and move on |
+| whisper-cpp `model` argument used to read an arbitrary file | Low | High | `Config.resolve_whispercpp_model` reuses the symlink-safe allow-list pattern (CLAUDE.md invariant #6) |
+| User expects whisper-cpp to accept m4a like MacWhisper does | Medium | Low | Clear `TranscribeError` naming supported formats (wav/mp3/flac) and pointing at the default engine |
 
 ## 11. Open questions
 
-### `mw` CLI capabilities (investigated 2026-04-24)
+### `mw` CLI capabilities (investigated 2026-04-24; corrected 2026-08-11 against MacWhisper 14.6)
 
-`mw transcribe <file>` supports the following flags:
+The April 2026 investigation below is **superseded** — MacWhisper's CLI has grown
+significantly since. `mw transcribe <file>` now supports:
 
 | Flag | Effect |
 |------|--------|
 | `--model <id>` | Override the active model. ID format: `engine:model-id` (e.g. `whisperkit:openai_whisper-large-v3-v20240930`). |
+| `--language <lang>` | Source language (ISO 639-1, or `auto`). Previously believed not to exist — it does now. Wired up in this server via `transcribe_audio`'s `language` argument and `MACWHISPER_LANGUAGE_DEFAULTS`. |
+| `--format <fmt>` | Output format: `txt, srt, vtt, json, csv, md, html, avid`. **This unblocks structured output (F9)** — the April note below claiming JSON requires parsing the internal SQLite DB is no longer accurate. Not yet implemented in this server; tracked as a separate backlog item. |
+| `--timestamps` / `--speakers` / `--speaker-names` | Per-segment timestamps and diarization, for non-txt formats. |
+| `--stream` | Emit transcript segments to stdout as they finalise rather than all at once. Single input only. |
+| `--persist` | Save the transcription to MacWhisper's internal history. |
+
+`--stream` is intentionally **not** used: our wrapper reads `stdout` after the process exits (`capture_output=True`), which is simpler and avoids the streaming-parse complexity. See `CLAUDE.md` quirks.
+
+<details>
+<summary>Original 2026-04-24 investigation (kept for history — was accurate at the time, MacWhisper has since added flags)</summary>
+
+`mw transcribe <file>` supported the following flags:
+
+| Flag | Effect |
+|------|--------|
+| `--model <id>` | Override the active model. ID format: `engine:model-id`. |
 | `--stream` | Emit transcript segments to stdout as they finalise rather than all at once. Same plain-text format — no timestamps, no JSON. |
 | `--persist` | Save the transcription to MacWhisper's internal history. |
 
-**No JSON output. No SRT output. No timestamps.** Structured output (segments with start/end times, speaker labels) is not available via the CLI as of v0.3.0. Achieving it would require parsing MacWhisper's internal SQLite database directly — out of scope for now.
+No JSON output, no SRT output, no timestamps, and no `--language` flag existed as of v0.3.0.
 
-`--stream` is intentionally **not** used: our wrapper reads `stdout` after the process exits (`capture_output=True`), which is simpler and avoids the streaming-parse complexity. See `CLAUDE.md` quirks.
+</details>
+
+### `whisper-cli` (whisper.cpp) CLI capabilities (investigated live 2026-08-11, whisper-cpp 1.9.2)
+
+Verified by installing `whisper-cpp` via Homebrew and running a real transcription
+against its bundled `jfk.wav` sample with a downloaded `ggml-tiny.en.bin` model,
+before writing any code against it (per this repo's diagnosis-before-action
+discipline — a guessed CLI contract would be exactly the "plausible but wrong"
+failure mode to avoid). Relevant flags:
+
+| Flag | Effect |
+|------|--------|
+| `-m, --model FNAME` | Path to a GGML model file (not an `engine:model-id` string — a real filesystem path). |
+| `-f, --file FNAME` | Input audio path. |
+| `-l, --language LANG` | ISO 639-1 code or `auto`. **Default is `en`**, not auto-detect — differs from MacWhisper's app-selection default. |
+| `-np, --no-prints` | Suppress non-result output. |
+| `-nt, --no-timestamps` | Plain text output. **Required** — without it every line is prefixed `[00:00:00.000 --> 00:00:07.960]`. |
+| `-otxt/-ovtt/-osrt/-ocsv/-oj` | Write to a file in that format instead of stdout. Not used — we read stdout, same pattern as `mw`. |
+
+Confirmed live: init/GPU logs (Metal, GGML backend selection) go to **stderr**,
+never stdout — clean separation, same as `mw`. Non-zero exit + stderr message on
+failure (verified: missing model file → exit 3, `"error: failed to initialize
+whisper context"`). Supported input formats per its own `--help`: **flac, mp3,
+ogg, wav** — no m4a/mp4/mov/aiff. No `--persist`/history equivalent exists.
+`whisper-cpp` ships no models — `brew install whisper-cpp` installs the binary
+only; GGML `.bin` files must be obtained separately (e.g.
+https://huggingface.co/ggerganov/whisper.cpp), matching this server's
+no-network-calls invariant (§7).
 
 ### Remaining open questions
 
 - ~~Should we expose a `cancel_transcription` tool for long-running jobs?~~ **Resolved:** `cancel_transcription()` implemented in v0.4.0 — kills the running subprocess.
 - ~~How to handle concurrent transcription requests — queue or reject?~~ **Resolved:** reject strategy via `threading.Lock` in v0.4.0.
+- ffmpeg-based transcoding to extend the whisper-cpp engine to m4a/mp4/mov/aiff — deferred, tracked in TODO.md backlog.
 
 ## 12. Known limitations (engine-level, not fixable in this wrapper)
 

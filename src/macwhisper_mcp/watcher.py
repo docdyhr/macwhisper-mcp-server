@@ -48,6 +48,9 @@ class FolderWatcher:
             done_dir.expanduser().resolve() if done_dir else self.incoming.parent / "done"
         )
         self.config = config
+        # Resolved once per watcher since the incoming folder is fixed for its lifetime.
+        # Already validated against LANGUAGE_RE at config-load time.
+        self.language = config.language_for(self.incoming)
         self.poll_interval = poll_interval
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -112,9 +115,12 @@ class FolderWatcher:
             return  # Another scan iteration already claimed this file
 
         log.info("Watcher: processing %s", path.name)
+        cmd = [self.config.mw_cli, "transcribe", str(processing)]
+        if self.language is not None:
+            cmd.extend(["--language", self.language])
         try:
             result = subprocess.run(
-                [self.config.mw_cli, "transcribe", str(processing)],
+                cmd,
                 capture_output=True,
                 text=True,
                 check=True,

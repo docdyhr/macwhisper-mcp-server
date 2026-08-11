@@ -47,8 +47,14 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
     _watcher: list[FolderWatcher] = []  # at most one element
 
     @mcp.tool()
-    def transcribe_audio(path: str, model: str | None = None, persist: bool = False) -> str:
-        """Transcribe a local audio file using MacWhisper and return the transcript.
+    def transcribe_audio(
+        path: str,
+        model: str | None = None,
+        language: str | None = None,
+        persist: bool = False,
+        engine: str = "macwhisper",
+    ) -> str:
+        """Transcribe a local audio file and return the transcript.
 
         IMPORTANT: ``path`` must be a file on the user's Mac filesystem inside the
         configured allow-list (typically ~/Desktop or ~/Downloads). Files uploaded
@@ -63,13 +69,25 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
         Args:
             path: Absolute or ``~``-prefixed path to an audio file on the local Mac
                 filesystem inside the configured allow-list.
-                Supported formats: m4a, mp3, mp4, mov, wav, aiff, flac.
-            model: Optional model override in MacWhisper engine:model-id format,
-                e.g. "whisperkit:openai_whisper-large-v3-v20240930". Use
-                ``list_models()`` to see what is installed. Defaults to the
-                model currently selected in MacWhisper.
+                Supported formats: m4a, mp3, mp4, mov, wav, aiff, flac (whisper-cpp
+                engine only: wav, mp3, flac).
+            model: Optional model override. For the default ``engine="macwhisper"``,
+                an engine:model-id string, e.g.
+                "whisperkit:openai_whisper-large-v3-v20240930" — use ``list_models()``
+                to see what is installed. For ``engine="whisper-cpp"``, this is
+                REQUIRED and must be the filename of a GGML model inside
+                ``MACWHISPER_WHISPERCPP_MODEL_DIR`` (not an engine:model-id string).
+            language: Optional ISO 639-1 code (e.g. "da", "de") or "auto" to force
+                the transcription language. If omitted, a per-directory default is
+                used when the file's folder matches one configured in
+                MACWHISPER_LANGUAGE_DEFAULTS; otherwise the engine's own default
+                applies (MacWhisper: app selection; whisper-cpp: English).
             persist: If True, save the transcription to MacWhisper's history.
-                Defaults to False.
+                Defaults to False. Not supported by the whisper-cpp engine.
+            engine: "macwhisper" (default) — routes through the MacWhisper CLI, or
+                "whisper-cpp" — an independent local backend that does not use
+                MacWhisper at all. Requires whisper-cpp installed
+                (`brew install whisper-cpp`) and MACWHISPER_WHISPERCPP_MODEL_DIR set.
 
         Returns:
             The full transcript as plain text.
@@ -80,7 +98,15 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
             )
         _current_proc.clear()
         try:
-            return transcribe(path, config, model=model, persist=persist, _proc_ref=_current_proc)
+            return transcribe(
+                path,
+                config,
+                model=model,
+                language=language,
+                persist=persist,
+                engine=engine,
+                _proc_ref=_current_proc,
+            )
         except TranscribeError:
             log.warning("transcribe_audio failed: %s", path)
             raise
@@ -107,12 +133,15 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
 
     @mcp.tool()
     def list_models() -> list[str]:
-        """Return the transcription models installed in MacWhisper.
+        """Return the transcription models available across all engines.
 
-        Each entry is formatted as ``engine:model-id — Display Name [active]``
-        where ``[active]`` marks the model currently selected in MacWhisper.
-        The ``engine:model-id`` string can be passed directly as the ``model``
-        argument to ``transcribe_audio``.
+        MacWhisper entries are formatted as ``engine:model-id — Display Name [active]``
+        where ``[active]`` marks the model currently selected in MacWhisper; pass the
+        ``engine:model-id`` string as ``model`` with the default ``engine="macwhisper"``.
+        whisper-cpp entries (if ``MACWHISPER_WHISPERCPP_MODEL_DIR`` is configured) are
+        formatted as ``filename [whisper-cpp]``; pass the filename as ``model`` with
+        ``engine="whisper-cpp"``. Requires the MacWhisper CLI to be reachable even if
+        you only intend to use the whisper-cpp engine.
         """
         try:
             result = subprocess.run(
@@ -148,6 +177,12 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
             if active:
                 entry += " [active]"
             models.append(entry)
+
+        if config.whispercpp_model_dir is not None and config.whispercpp_model_dir.is_dir():
+            for f in sorted(config.whispercpp_model_dir.iterdir()):
+                if f.is_file() and f.suffix.lower() in (".bin", ".gguf"):
+                    models.append(f"{f.name} [whisper-cpp]")
+
         return models
 
     @mcp.tool()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import time
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -155,3 +156,33 @@ def test_watcher_uses_custom_done_dir(mocker, incoming, watch_config, tmp_path):
 def test_watcher_done_dir_defaults_to_sibling(incoming, watch_config):
     watcher = FolderWatcher(incoming, watch_config, poll_interval=0.1)
     assert watcher.done_dir == incoming.resolve().parent / "done"
+
+
+def test_watcher_passes_language_flag_for_mapped_dir(mocker, incoming, watch_config):
+    mock = _mock_watcher_popen(mocker)
+    lang_config = dataclasses.replace(watch_config, language_defaults=((incoming.resolve(), "da"),))
+    (incoming / "clip.m4a").write_bytes(b"x")
+
+    watcher = FolderWatcher(incoming, lang_config, poll_interval=0.1)
+    assert watcher.language == "da"
+    watcher.start()
+    time.sleep(0.4)
+    watcher.stop()
+
+    argv = mock.call_args[0][0]
+    assert "--language" in argv
+    assert argv[argv.index("--language") + 1] == "da"
+
+
+def test_watcher_omits_language_flag_for_unmapped_dir(mocker, incoming, watch_config):
+    mock = _mock_watcher_popen(mocker)
+    (incoming / "clip.m4a").write_bytes(b"x")
+
+    watcher = FolderWatcher(incoming, watch_config, poll_interval=0.1)
+    assert watcher.language is None
+    watcher.start()
+    time.sleep(0.4)
+    watcher.stop()
+
+    argv = mock.call_args[0][0]
+    assert "--language" not in argv

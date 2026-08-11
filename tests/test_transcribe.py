@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 from unittest.mock import MagicMock
 
@@ -154,6 +155,47 @@ def test_transcribe_omits_persist_flag_by_default(mocker, config, audio_file):
 def test_transcribe_rejects_oversized_output(mocker, config, audio_file):
     """Runaway mw output above MAX_OUTPUT_BYTES is rejected (shared constant)."""
     _mock_popen(mocker, stdout="x" * 100)
-    mocker.patch("macwhisper_mcp.transcribe.MAX_OUTPUT_BYTES", 10)
+    mocker.patch("macwhisper_mcp.engines.MAX_OUTPUT_BYTES", 10)
     with pytest.raises(TranscribeError, match="exceeded size limit"):
         transcribe(str(audio_file), config)
+
+
+def test_transcribe_passes_language_flag(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    transcribe(str(audio_file), config, language="da")
+    argv = mock.call_args[0][0]
+    assert "--language" in argv
+    assert argv[argv.index("--language") + 1] == "da"
+
+
+def test_transcribe_omits_language_flag_by_default(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    transcribe(str(audio_file), config)
+    assert "--language" not in mock.call_args[0][0]
+
+
+def test_transcribe_rejects_invalid_language(mocker, config, audio_file):
+    _mock_popen(mocker)
+    with pytest.raises(TranscribeError, match="Invalid language code"):
+        transcribe(str(audio_file), config, language="danish")
+
+
+def test_transcribe_uses_directory_language_default(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    dir_config = dataclasses.replace(
+        config, language_defaults=((audio_file.parent.resolve(), "da"),)
+    )
+    transcribe(str(audio_file), dir_config)
+    argv = mock.call_args[0][0]
+    assert "--language" in argv
+    assert argv[argv.index("--language") + 1] == "da"
+
+
+def test_transcribe_explicit_language_overrides_directory_default(mocker, config, audio_file):
+    mock, _ = _mock_popen(mocker)
+    dir_config = dataclasses.replace(
+        config, language_defaults=((audio_file.parent.resolve(), "da"),)
+    )
+    transcribe(str(audio_file), dir_config, language="de")
+    argv = mock.call_args[0][0]
+    assert argv[argv.index("--language") + 1] == "de"

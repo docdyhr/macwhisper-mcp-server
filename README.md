@@ -121,8 +121,8 @@ You should see a `transcribe_audio` tool call appear, followed by the transcript
 
 | Tool | Description |
 |------|-------------|
-| `transcribe_audio(path, model?, persist?)` | Transcribe an audio file and return the transcript as plain text. Pass `persist=true` to save to MacWhisper history. |
-| `list_models()` | List transcription models installed in MacWhisper; active model is marked |
+| `transcribe_audio(path, model?, language?, persist?, engine?)` | Transcribe an audio file and return the transcript as plain text. `language` is an ISO 639-1 code (e.g. `da`) or `auto`; overrides any per-directory default. `persist=true` saves to MacWhisper history (MacWhisper engine only). `engine` is `"macwhisper"` (default) or `"whisper-cpp"` — see [Alternative engine](#alternative-engine-whispercpp) below. |
+| `list_models()` | List transcription models installed in MacWhisper, plus whisper-cpp models if `MACWHISPER_WHISPERCPP_MODEL_DIR` is configured; active MacWhisper model is marked |
 | `cancel_transcription()` | Cancel the currently running transcription |
 | `list_allowed_paths()` | Return the directories the server is allowed to read from |
 | `start_watch(folder)` | Watch a folder and auto-transcribe new audio files into `../done/` |
@@ -142,8 +142,59 @@ All configuration is via environment variables. Pass them through the `env` dict
 | `MACWHISPER_ALLOWED_PATHS` | `~/Desktop` | Colon-separated list of directories the server may read from |
 | `MACWHISPER_CLI` | auto-detected | Path to the `mw` binary. Defaults to `/Applications/MacWhisper.app/Contents/MacOS/mw` if that file exists, otherwise `mw` on `PATH` |
 | `MACWHISPER_LOG_PATH` | `~/Library/Logs/macwhisper-mcp.log` | Log file path (never stdout — that's reserved for MCP) |
+| `MACWHISPER_LANGUAGE_DEFAULTS` | none | Colon-separated `dir=lang` pairs (ISO 639-1, or `auto`) — files in a matching directory get `--language` automatically. Most specific directory wins; an explicit `language` argument always overrides. |
+| `MACWHISPER_WHISPERCPP_BINARY` | `whisper-cli` on `PATH` | Path to the `whisper-cli` binary, if not on `PATH`. Only used when `engine="whisper-cpp"`. |
+| `MACWHISPER_WHISPERCPP_MODEL_DIR` | none | Directory containing your GGML `.bin` model files. Required to use `engine="whisper-cpp"` at all — see below. |
 
 **Local development:** copy `.env.example` to `.env` and adjust. With [direnv](https://direnv.net/), `.envrc` exports `.env` automatically. Without direnv: `source .env`.
+
+### Per-directory language defaults
+
+If you regularly transcribe recordings in a specific language, map a subfolder to
+it instead of passing `language` on every call:
+
+```json
+"MACWHISPER_LANGUAGE_DEFAULTS": "~/Desktop/DK=da:~/Desktop/DE=de"
+```
+
+Drop a file in `~/Desktop/DK/` and `transcribe_audio` passes `--language da`
+automatically. An explicit `language` argument on the tool call always wins over
+the directory default.
+
+### Alternative engine: whisper.cpp
+
+`transcribe_audio(..., engine="whisper-cpp")` transcribes using a standalone
+[whisper.cpp](https://github.com/ggml-org/whisper.cpp) binary instead of
+MacWhisper — useful if you don't have a MacWhisper license, or want a fully
+open-source local path. It does not touch MacWhisper in any way.
+
+**Setup:**
+
+```bash
+brew install whisper-cpp
+```
+
+Homebrew installs the `whisper-cli` binary only — no models. Download a GGML
+model yourself (this server never downloads anything over the network) from
+[huggingface.co/ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main),
+e.g. `ggml-base.en.bin`, into a directory of your choice, then point the server at it:
+
+```json
+"MACWHISPER_WHISPERCPP_MODEL_DIR": "~/whisper-models"
+```
+
+Then call the tool with the model's filename (not a MacWhisper `engine:model-id`
+string):
+
+> Transcribe ~/Desktop/memo.wav using the whisper-cpp engine with model ggml-base.en.bin
+
+**Limitations (v1):**
+- Input formats: `.wav`, `.mp3`, `.flac` only — not `.m4a`/`.mp4`/`.mov`/`.aiff`. This
+  is whisper.cpp's own native format support; convert other formats first (e.g. with
+  `ffmpeg`) or use the default MacWhisper engine, which handles all supported formats.
+- `persist=true` is not supported — whisper.cpp has no history mechanism.
+- Default language is English (`en`) if neither `language` nor a directory default
+  is set — unlike MacWhisper, which defers to the app's own language selection.
 
 ---
 

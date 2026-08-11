@@ -51,7 +51,9 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 ## Phase 4 — Ergonomics (v0.4.0)
 
 - [x] Watch-folder mode: `start_watch` / `stop_watch` / `get_watch_results` MCP tools
-- [x] Language parameter — investigated: `mw` has no `--language` flag (PRD §11); Whisper is multilingual by default
+- [x] Language parameter — investigated 2026-04-24: `mw` had no `--language` flag at
+      the time (PRD §11); Whisper is multilingual by default. **Superseded 2026-08-11**
+      — MacWhisper 14.6 added `--language`; see Phase 7 below for the actual implementation.
 - [x] Cancel-running-job tool: `cancel_transcription()` kills the running subprocess
 - [x] Concurrent request handling: reject strategy with `threading.Lock`
 
@@ -78,14 +80,28 @@ Goal: single tool `transcribe_audio` working end-to-end with Claude Desktop.
 - [x] Submitted to MCP Registry (`io.github.docdyhr/macwhisper-mcp-server`); awesome-mcp-servers PR #5397 open
 - [x] Bumped to v1.1.0; dev version is v1.1.1.dev0
 
+## Phase 7 — Language defaults & alternative engine (v1.2.0, started 2026-08-11)
+
+- [x] Per-directory language defaults: `MACWHISPER_LANGUAGE_DEFAULTS` env var maps a
+      directory to an ISO 639-1 code, passed as `--language`; explicit `language`
+      argument on `transcribe_audio` always overrides. Unblocked by the discovery
+      that MacWhisper 14.6's CLI now has a real `--language` flag (PRD §11).
+- [x] Alternative engine support (whisper.cpp) as an independent backend that bypasses
+      MacWhisper entirely: `engine="whisper-cpp"` on `transcribe_audio`, new
+      `src/macwhisper_mcp/engines.py` module, `MACWHISPER_WHISPERCPP_BINARY` /
+      `MACWHISPER_WHISPERCPP_MODEL_DIR` config. Live-verified against whisper-cpp
+      1.9.2 before writing argv-building code (PRD §11). v1 scope: wav/mp3/flac
+      input only (whisper-cli's native formats ∩ this server's ALLOWED_EXTENSIONS);
+      ffmpeg transcoding for m4a/mp4/mov/aiff is an explicit follow-on, not this phase.
+
 ---
 
 ## Backlog / ideas
 
 - DMG installer for non-technical users (Homebrew tap already shipped — `docdyhr/tap`)
 - Menu-bar app wrapping the server (start/stop, log viewer)
-- Alternative engine support (whisper.cpp) behind same MCP interface
-- Per-directory language defaults (e.g. `~/Desktop/DK/` → force Danish)
+- ffmpeg-based audio transcoding for the whisper.cpp engine (non-WAV input)
+- Structured/JSON output via `mw --format json` (newly unblocked, PRD §11 — not yet scoped)
 
 ## Won't do (explicit)
 
