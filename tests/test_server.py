@@ -360,6 +360,7 @@ def test_list_models_includes_whispercpp_models(mocker, config, tmp_path):
     models_dir = tmp_path / "whispercpp-models"
     models_dir.mkdir()
     (models_dir / "ggml-base.en.bin").write_bytes(b"fake")
+    (models_dir / "ggml-base.en.gguf").write_bytes(b"fake")
     (models_dir / "notes.txt").write_bytes(b"ignore me")
 
     cfg = dataclasses.replace(config, whispercpp_model_dir=models_dir.resolve())
@@ -368,6 +369,7 @@ def test_list_models_includes_whispercpp_models(mocker, config, tmp_path):
 
     assert not result.is_error
     assert "ggml-base.en.bin [whisper-cpp]" in result.data
+    assert "ggml-base.en.gguf [whisper-cpp]" in result.data
     assert not any("notes.txt" in m for m in result.data)
 
 
