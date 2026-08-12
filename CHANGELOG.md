@@ -9,6 +9,28 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `transcribe_audio` accepts an optional `language` argument (ISO 639-1 code,
+  or `"auto"`), passed through as `--language` to `mw`.
+- `MACWHISPER_LANGUAGE_DEFAULTS` env var maps directories to a default
+  language (e.g. `~/Desktop/DK=da`) — files in a matching directory (or its
+  subdirectories) get `--language` automatically, most-specific match wins.
+  An explicit `language` argument always overrides the directory default.
+  Applies to both `transcribe_audio` and watch-folder transcriptions.
+- New `engine` argument on `transcribe_audio` (`"macwhisper"` default, or
+  `"whisper-cpp"`) — an independent transcription backend using a standalone
+  `whisper-cli` binary that does not go through MacWhisper at all. New
+  `MACWHISPER_WHISPERCPP_BINARY` / `MACWHISPER_WHISPERCPP_MODEL_DIR` env vars.
+  v1 supports `.wav`/`.mp3`/`.flac` input only; see README for setup and
+  limitations. `list_models()` now also lists whisper-cpp models when
+  `MACWHISPER_WHISPERCPP_MODEL_DIR` is configured.
+
+### Changed
+- `transcribe.py` now validates the request and dispatches to a new
+  `engines.py` module (MacWhisper and whisper-cpp backends); behavior of the
+  MacWhisper path is unchanged. Test mock target for `subprocess.Popen` moved
+  from `macwhisper_mcp.transcribe` to `macwhisper_mcp.engines` accordingly.
+
 ### Fixed
 - `cancel_transcription` no longer raises `IndexError` (surfaced to the client
   as an error) when the running transcription finishes and clears the proc

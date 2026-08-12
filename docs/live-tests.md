@@ -6,6 +6,37 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-08-11 — First live transcription via the whisper-cpp engine (synthetic MCP client)
+
+**Exercised:** Full pipeline through the new independent backend — `build_server()` → synthetic FastMCP `Client` → `tools/call transcribe_audio` (`engine="whisper-cpp"`) → `transcribe.py` validation → `engines.py::run_whispercpp` → real `whisper-cli` subprocess → transcript returned.
+
+**Environment:**
+- `whisper-cpp` 1.9.2 installed via `brew install whisper-cpp` for this session (binary: `whisper-cli`)
+- Model: `ggml-tiny.en.bin`, downloaded to a temp dir for this test (not committed, not auto-downloaded by the server — user is expected to provide their own model per `MACWHISPER_WHISPERCPP_MODEL_DIR`)
+- Audio: `jfk.wav`, whisper.cpp's own bundled sample (`/opt/homebrew/Cellar/whisper-cpp/1.9.2/share/whisper-cpp/jfk.wav`), copied into a temp allow-listed dir
+- `Config(allowed_paths=(<temp audio dir>,), whispercpp_binary="whisper-cli", whispercpp_model_dir=<temp model dir>)`
+- All temp files (model, audio copy, log) deleted after the test — nothing committed
+
+**Result:** ✅ Success.
+
+- `is_error: False`
+- Wall time: **0.32s** (tiny model, ~11s clip, Apple M3 Max with Metal acceleration — not representative of larger models/clips)
+- Transcript: *"And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."* — byte-identical to the raw `whisper-cli -np -nt` invocation used to verify the CLI contract before writing `engines.py` (see PRD §11)
+
+**What this proves:**
+
+| Layer | Status |
+|---|---|
+| `engine="whisper-cpp"` dispatch in `transcribe.py`/`engines.py` | ✅ real subprocess, not mocked |
+| `Config.resolve_whispercpp_model` (symlink-safe model resolution) | ✅ resolved `ggml-tiny.en.bin` correctly from the configured dir |
+| `-np -nt` flags produce clean plain-text stdout | ✅ matches the raw CLI verification exactly |
+| Path allow-list applies identically to both engines | ✅ same `transcribe.py` validation path as MacWhisper |
+| End-to-end via the synthetic MCP client (not just unit-mocked tests) | ✅ first real proof the whisper-cpp engine works through the actual server, not just `pytest` mocks |
+
+**Follow-ups:** None new. Larger models and longer clips will be slower than this 0.32s tiny-model result — not yet measured. ffmpeg transcoding for non-wav/mp3/flac input remains unimplemented (TODO.md backlog).
+
+---
+
 ### 2026-04-24 — smoke_test.py against tears_in_rain.wav (English, Blade Runner)
 
 **Exercised:** `scripts/smoke_test.py` — first run of the reusable harness against a real English fixture.

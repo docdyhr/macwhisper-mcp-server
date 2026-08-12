@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import dataclasses
 import threading
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -293,6 +294,26 @@ def test_transcribe_audio_persist_flag(mocker, config, audio_file):
 
 
 # ---------------------------------------------------------------------------
+# transcribe_audio — language flag
+# ---------------------------------------------------------------------------
+
+
+def test_transcribe_audio_language_flag(mocker, config, audio_file):
+    mock_proc = MagicMock()
+    mock_proc.communicate.return_value = ("Transcript.", "")
+    mock_proc.returncode = 0
+    mock = mocker.patch("macwhisper_mcp.transcribe.subprocess.Popen", return_value=mock_proc)
+
+    mcp = build_server(config)
+    result = _call(mcp, "transcribe_audio", {"path": str(audio_file), "language": "da"})
+
+    assert not result.is_error
+    argv = mock.call_args[0][0]
+    assert "--language" in argv
+    assert argv[argv.index("--language") + 1] == "da"
+
+
+# ---------------------------------------------------------------------------
 # list_models
 # ---------------------------------------------------------------------------
 
@@ -329,6 +350,64 @@ def test_list_models_cli_not_found(mocker, config):
     result = _call(mcp, "list_models", {})
     assert result.is_error
     assert "not found" in _error_text(result)
+
+
+def test_list_models_includes_whispercpp_models(mocker, config, tmp_path):
+    mock_result = MagicMock()
+    mock_result.stdout = _MODELS_OUTPUT
+    mocker.patch("macwhisper_mcp.server.subprocess.run", return_value=mock_result)
+
+    models_dir = tmp_path / "whispercpp-models"
+    models_dir.mkdir()
+    (models_dir / "ggml-base.en.bin").write_bytes(b"fake")
+    (models_dir / "ggml-base.en.gguf").write_bytes(b"fake")
+    (models_dir / "notes.txt").write_bytes(b"ignore me")
+
+    cfg = dataclasses.replace(config, whispercpp_model_dir=models_dir.resolve())
+    mcp = build_server(cfg)
+    result = _call(mcp, "list_models", {})
+
+    assert not result.is_error
+    assert "ggml-base.en.bin [whisper-cpp]" in result.data
+    assert "ggml-base.en.gguf [whisper-cpp]" in result.data
+    assert not any("notes.txt" in m for m in result.data)
+
+
+# ---------------------------------------------------------------------------
+# transcribe_audio — whisper-cpp engine
+# ---------------------------------------------------------------------------
+
+
+def test_transcribe_audio_whispercpp_engine(mocker, config, tmp_path, allowed_dir):
+    models_dir = tmp_path / "whispercpp-models"
+    models_dir.mkdir()
+    (models_dir / "ggml-base.en.bin").write_bytes(b"fake")
+    wav = allowed_dir / "memo.wav"
+    wav.write_bytes(b"fake audio")
+
+    mock_proc = MagicMock()
+    mock_proc.communicate.return_value = ("Transcript.", "")
+    mock_proc.returncode = 0
+    mock = mocker.patch("macwhisper_mcp.engines.subprocess.Popen", return_value=mock_proc)
+
+    cfg = dataclasses.replace(config, whispercpp_model_dir=models_dir.resolve())
+    mcp = build_server(cfg)
+    result = _call(
+        mcp,
+        "transcribe_audio",
+        {"path": str(wav), "model": "ggml-base.en.bin", "engine": "whisper-cpp"},
+    )
+
+    assert not result.is_error
+    assert result.data == "Transcript."
+    assert mock.call_args[0][0][0] == "whisper-cli"
+
+
+def test_transcribe_audio_unknown_engine_rejected(config, audio_file):
+    mcp = build_server(config)
+    result = _call(mcp, "transcribe_audio", {"path": str(audio_file), "engine": "bogus"})
+    assert result.is_error
+    assert "Unknown engine" in _error_text(result)
 
 
 # ---------------------------------------------------------------------------
