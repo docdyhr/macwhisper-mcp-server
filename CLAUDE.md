@@ -8,7 +8,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-08-11)
 
-**v1.2.0.dev0 — 7 MCP tools, 96 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
+**v1.2.0 — 7 MCP tools, 96 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.6`
@@ -17,7 +17,7 @@ Verified working:
 - CLI at `/usr/local/bin/mw` (symlink → `/Applications/MacWhisper.app/Contents/MacOS/mw`); `mw` is on PATH. `config.py` auto-detects the app-bundle path and uses it directly.
 - MCP `initialize` + `tools/list` handshake works over stdio.
 - **Live transcription round-trip confirmed** via synthetic MCP client — 13.6s on a short Danish clip, UTF-8 clean. See [`docs/live-tests.md`](./docs/live-tests.md).
-- 61/61 tests pass (`pytest -q`)
+- 96/96 tests pass (`pytest -q`)
 - CI green on every push (GitHub Actions, `macos-latest`, Python 3.13)
 - CodeQL SAST scan enabled and clean
 - Published: PyPI (`pip install macwhisper-mcp-server`) and MCP Registry (`io.github.docdyhr/macwhisper-mcp-server`)

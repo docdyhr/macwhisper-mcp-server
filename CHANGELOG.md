@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] — 2026-08-13
+
 ### Added
 - `transcribe_audio` accepts an optional `language` argument (ISO 639-1 code,
   or `"auto"`), passed through as `--language` to `mw`.
@@ -30,6 +34,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `engines.py` module (MacWhisper and whisper-cpp backends); behavior of the
   MacWhisper path is unchanged. Test mock target for `subprocess.Popen` moved
   from `macwhisper_mcp.transcribe` to `macwhisper_mcp.engines` accordingly.
+- The 10 MB output cap is now a single shared `MAX_OUTPUT_BYTES` constant in
+  `config.py`, imported by `transcribe.py` and `watcher.py` so the two paths
+  can never enforce different limits.
 
 ### Fixed
 - `cancel_transcription` no longer raises `IndexError` (surfaced to the client
@@ -44,11 +51,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   outside the configured allow-list (previously it silently wrote there). The
   done directory is overridable via the new `MACWHISPER_WATCH_DONE_DIR` env
   var; the default remains `<incoming>/../done`.
-
-### Changed
-- The 10 MB output cap is now a single shared `MAX_OUTPUT_BYTES` constant in
-  `config.py`, imported by `transcribe.py` and `watcher.py` so the two paths
-  can never enforce different limits.
 
 ---
 
