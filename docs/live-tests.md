@@ -6,6 +6,58 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-08-17 — fastmcp 3.4.7 upgrade validation (stdio handshake, no transcription)
+
+**Exercised:** MCP `initialize` + `notifications/initialized` + `tools/list` over real stdio against `python -m macwhisper_mcp.server` run as a subprocess. Handshake only — no `tools/call`, so no audio and no `mw` invocation. Purpose was to gate the Dependabot bump in PR #19 (`fastmcp==3.4.6` → `==3.4.7`) against invariant #5.
+
+**Environment:**
+- Python 3.13.13, repo venv at `.venv/`
+- `fastmcp` tested at both `3.4.6` (baseline) and `3.4.7` (candidate), installed via `pip install 'fastmcp==3.4.7'`
+- `MACWHISPER_LOG_PATH` pointed at a throwaway file under `~/Library/Logs/` (a scratchpad path under `/private/tmp` is correctly *rejected* by `Config.from_env` — the log path must live under `$HOME`)
+- Working tree at `main` (a58a13c), clean
+
+**Result:** ✅ Success on both versions — behaviour identical.
+
+| | fastmcp 3.4.6 | fastmcp 3.4.7 |
+|---|---|---|
+| `pytest -q` | 96 passed | 96 passed |
+| `protocolVersion` | `2025-06-18` | `2025-06-18` |
+| `serverInfo` | `macwhisper 3.4.6` | `macwhisper 3.4.7` |
+| `tools/list` | 7 tools | 7 tools (same names) |
+| stdout purity | clean JSON-RPC only | clean JSON-RPC only |
+| `ruff check` / `format --check` | — | All checks passed / 16 files formatted |
+
+Tools declared on both: `cancel_transcription`, `get_watch_results`, `list_allowed_paths`, `list_models`, `start_watch`, `stop_watch`, `transcribe_audio`.
+
+**What this proves:**
+
+| Layer | Status |
+|---|---|
+| FastMCP 3.4.7 stdio transport | ✅ handshake unchanged from 3.4.6 |
+| Tool registration through `build_server()` | ✅ all 7 tools survive the bump |
+| Invariant #4 (logs to file, never stdout) | ✅ stdout carried only JSON-RPC; fastmcp's banner went to stderr on both versions |
+| Log-path containment check | ✅ `$HOME`-escape rejected with a clear error |
+
+**Observations / follow-ups:**
+
+- **The 3.4.7 release is irrelevant to this server.** Upstream describes it as a single security fix — CIMD `private_key_jwt` assertion audience validation for `OAuthProxy` deployments. This server is stdio-only with no OAuth and no network calls, so none of the changed code is reachable from our path. Low-risk bump.
+- **`serverInfo.version` still tracks fastmcp, not us** — now reports `3.4.7`. Same known cosmetic quirk as the 2026-08-11 entries; still fixed by passing `version=__version__` to `FastMCP()`.
+- **Editable-install metadata conflicts during the test.** `pip check` reports `macwhisper-mcp-server 1.2.0.dev0 has requirement fastmcp==3.4.6, but you have fastmcp 3.4.7` until `pyproject.toml` is updated. Expected, harmless for the test, resolves when PR #19 merges.
+- **Venv restored to `fastmcp==3.4.6`** after the run, since PR #19 was not merged in this session.
+
+**How to reproduce:**
+
+```bash
+source .venv/bin/activate
+pip install 'fastmcp==3.4.7'
+pytest -q
+# then drive `python -m macwhisper_mcp.server` over stdio with initialize + tools/list
+```
+
+Still no committed harness for this — the script was a one-off. `scripts/smoke_test.py` remains the standing Phase 2 ask (see TODO.md); this entry is the third time a throwaway client has been written from scratch.
+
+---
+
 ### 2026-08-11 — First live transcription via the whisper-cpp engine (synthetic MCP client)
 
 **Exercised:** Full pipeline through the new independent backend — `build_server()` → synthetic FastMCP `Client` → `tools/call transcribe_audio` (`engine="whisper-cpp"`) → `transcribe.py` validation → `engines.py::run_whispercpp` → real `whisper-cli` subprocess → transcript returned.
