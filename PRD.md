@@ -97,7 +97,7 @@ validation in `transcribe.py`, which applies to both engines identically.
 
 **Stack:**
 - Python 3.13.13 (managed by pyenv)
-- `fastmcp==3.4.6` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
+- `fastmcp==3.4.7` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
 - stdlib only for everything else (`subprocess`, `pathlib`, `os`)
 - Optional: `whisper-cpp` (Homebrew formula `whisper-cpp`, binary `whisper-cli`) for the
   whisper-cpp engine — not a Python dependency, invoked as an external CLI like `mw`

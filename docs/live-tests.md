@@ -6,6 +6,27 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-08-17 — fastmcp 3.4.7 upgrade validation (stdio handshake, no transcription)
+
+**Exercised:** MCP `initialize` + `notifications/initialized` + `tools/list` over real stdio against `python -m macwhisper_mcp.server` run as a subprocess. Handshake only — no `tools/call`, so no audio and no `mw` invocation. Gate for the `fastmcp` pin bump `3.4.6` → `3.4.7` under invariant #5.
+
+**Environment:** Python 3.13.13, repo venv at `.venv/`, `main` @ a58a13c. `MACWHISPER_LOG_PATH` under `~/Library/Logs/`.
+
+**Result:** ✅ Success on both versions — behaviour identical.
+
+| | fastmcp 3.4.6 | fastmcp 3.4.7 |
+|---|---|---|
+| `pytest -q` | 96 passed | 96 passed |
+| `protocolVersion` | `2025-06-18` | `2025-06-18` |
+| `serverInfo` | `macwhisper 3.4.6` | `macwhisper 3.4.7` |
+| `tools/list` | 7 tools | 7 tools (same names) |
+| stdout purity (invariant #4) | clean JSON-RPC only | clean JSON-RPC only |
+| `ruff check` / `format --check` | — | All checks passed / 16 files formatted |
+
+Tools declared on both: `cancel_transcription`, `get_watch_results`, `list_allowed_paths`, `list_models`, `start_watch`, `stop_watch`, `transcribe_audio`.
+
+---
+
 ### 2026-08-11 — First live transcription via the whisper-cpp engine (synthetic MCP client)
 
 **Exercised:** Full pipeline through the new independent backend — `build_server()` → synthetic FastMCP `Client` → `tools/call transcribe_audio` (`engine="whisper-cpp"`) → `transcribe.py` validation → `engines.py::run_whispercpp` → real `whisper-cli` subprocess → transcript returned.

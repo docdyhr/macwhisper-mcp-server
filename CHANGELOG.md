@@ -9,6 +9,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Pinned `fastmcp` bumped `3.4.6` → `3.4.7`. Upstream release is a single
+  security fix to CIMD `private_key_jwt` assertion audience validation for
+  `OAuthProxy` deployments — unreachable from this server's stdio-only,
+  no-network path. Validated per invariant #5: full suite green (96 tests)
+  and a live stdio `initialize` + `tools/list` handshake identical to 3.4.6
+  on both versions. See `docs/live-tests.md` (2026-08-17).
+
 ---
 
 ## [1.2.0] — 2026-08-13
