@@ -6,6 +6,42 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-08-18 — post-merge verification on main (handshake + `tools/list` + live `list_models`)
+
+**Exercised:** MCP `initialize` → `tools/list` → `tools/call list_models` over real stdio against the installed `macwhisper-mcp` console script run as a subprocess. No `transcribe_audio`, so no audio file and no transcription — but `list_models` does shell out to the real `mw` binary, so this covers one full round-trip through the `subprocess.run` layer. Run as a release-readiness check on `main` @ 18e5099 (3 commits past the `v1.2.0` tag).
+
+**Environment:**
+- Python 3.13.13 (`.venv/bin/python`), macOS 27.0
+- `fastmcp==3.4.7`, client-side `mcp==1.27.2`
+- MacWhisper CLI at `/usr/local/bin/mw` → app bundle
+- Allow-list: `~/Desktop` (default, set via `MACWHISPER_ALLOWED_PATHS`)
+
+**Result:** ✅ Success.
+
+- `pytest -q`: **96 passed** in 5.03s. `ruff check` clean, `ruff format --check` clean (16 files).
+- `initialize`: `serverInfo` = `macwhisper 3.4.7`, `protocolVersion` = `2025-11-25`.
+- `tools/list`: all **7 tools** present with expected schemas — `transcribe_audio(path*, model, language, persist, engine)`, `cancel_transcription`, `list_models`, `list_allowed_paths`, `start_watch(folder*)`, `stop_watch`, `get_watch_results`.
+- `tools/call list_models`: `isError=false`, 263 chars, 5 models parsed out of `mw models list`'s space-padded tabular output — WhisperKit large-v3-turbo `[active]`, Parakeet v3, and three OpenAI entries.
+- Stdout/stderr separation held: FastMCP's ASCII banner and the `Starting MCP server` log line both went to stderr; stdout carried only JSON-RPC. Invariant #4 intact.
+
+**What this proves:**
+
+| Layer | Status |
+|---|---|
+| `fastmcp==3.4.7` stdio transport on `main` | ✅ multi-turn JSON-RPC works |
+| 7-tool surface after the v1.2 engines split | ✅ all present, schemas unchanged |
+| `mw models list` parsing (`re.split(r"\s{2,}")`) | ✅ 5 models parsed live |
+| Stdout reserved for JSON-RPC | ✅ banner + logs on stderr only |
+| Console-script entry point (`.venv/bin/macwhisper-mcp`) | ✅ spawns and serves |
+
+**Observations / follow-ups:**
+
+- **`protocolVersion` moved to `2025-11-25`**, up from `2025-06-18` in the 2026-08-17 entry. Same server, same `fastmcp` pin — the difference is the client: this run used `mcp==1.27.2`, which negotiates a newer revision. Server-side negotiation handled it without changes. Not a regression; noted so the two entries don't read as contradictory.
+- **`serverInfo.version` still reports `3.4.7`** (fastmcp's version, not ours) — the long-standing cosmetic quirk from the 2026-08-17 and earlier entries. Unchanged, still worth a `version=__version__` one-liner.
+- The handshake-only script used here lives in the session scratchpad, not the repo. `scripts/smoke_test.py` remains the committed harness but requires an audio file; a `--handshake-only` flag would make it usable as a no-fixture CI-adjacent check.
+
+---
+
 ### 2026-08-17 — fastmcp 3.4.7 upgrade validation (stdio handshake, no transcription)
 
 **Exercised:** MCP `initialize` + `notifications/initialized` + `tools/list` over real stdio against `python -m macwhisper_mcp.server` run as a subprocess. Handshake only — no `tools/call`, so no audio and no `mw` invocation. Gate for the `fastmcp` pin bump `3.4.6` → `3.4.7` under invariant #5.

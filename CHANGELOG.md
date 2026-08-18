@@ -9,6 +9,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.2.1] — 2026-08-18
+
+Maintenance release. No functional change to the server — the 7 MCP tools,
+their schemas, and all six security invariants are identical to 1.2.0.
+
 ### Changed
 - Pinned `fastmcp` bumped `3.4.6` → `3.4.7`. Upstream release is a single
   security fix to CIMD `private_key_jwt` assertion audience validation for
@@ -16,6 +23,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no-network path. Validated per invariant #5: full suite green (96 tests)
   and a live stdio `initialize` + `tools/list` handshake identical to 3.4.6
   on both versions. See `docs/live-tests.md` (2026-08-17).
+
+### Documentation
+- Synced the `fastmcp` pin references in `CLAUDE.md` and `PRD.md` to `3.4.7`.
+- New `docs/live-tests.md` entry (2026-08-18) recording a post-merge
+  verification run on `main`: handshake, `tools/list`, and a live
+  `tools/call list_models` round-trip through the real `mw` binary.
+
+### Security
+- `github/codeql-action` bumped `4.37.4` → `4.37.7` (CI only, not shipped
+  in the package).
 
 ---
 
