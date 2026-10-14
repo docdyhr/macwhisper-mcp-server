@@ -47,7 +47,7 @@ async def run(audio_path: Path) -> None:
         result = await session.call_tool("transcribe_audio", {"path": str(audio_path.resolve())})
         elapsed = time.perf_counter() - t0
 
-        if result.isError:
+        if result.is_error:
             print(f"\nERROR  : {result.content}")
             sys.exit(1)
 

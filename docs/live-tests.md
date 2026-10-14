@@ -6,6 +6,33 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-10-14 — fastmcp 4.1.0 validation for the v1.2.1 release (handshake, list_models, live transcription)
+
+**Exercised:** The invariant #5 gate for the `fastmcp` pin `3.4.7` → `4.0.10` → `4.1.0` (FastMCP 4, on MCP Python SDK v2), run on branch `release/v1.2.1` cut from `main` @ 910df82. It covered three things:
+1. A raw stdio JSON-RPC client speaking `2025-06-18` (`initialize`, `notifications/initialized`, `tools/list`) against `python -m macwhisper_mcp.server`, with stdout captured separately from stderr.
+2. A current-SDK `ClientSession` doing `initialize` + `tools/list` + `tools/call list_models`.
+3. `scripts/smoke_test.py tests/fixtures/tears_in_rain.wav`, a full `transcribe_audio` through the real `mw` binary.
+
+**Environment:** Python 3.13.13, repo venv at `.venv/` reinstalled with `pip install -e ".[dev]"` (`fastmcp 4.1.0`, `pip check` clean). MacWhisper CLI at `/usr/local/bin/mw` (→ app bundle). Allow-list `tests/fixtures/` via `MACWHISPER_ALLOWED_PATHS`.
+
+**Result:** ✅ Success.
+
+| Check | Result |
+|---|---|
+| `pytest -q` | 96 passed |
+| `ruff check` / `format --check` | All checks passed / 16 files already formatted |
+| 2025-06-18 client: `protocolVersion` | `2025-06-18` (old-protocol clients such as Claude Desktop still negotiate) |
+| current SDK client: `protocolVersion` | `2025-11-25` |
+| `serverInfo` | `macwhisper 4.1.0` (fastmcp's version, known cosmetic quirk) |
+| `tools/list` | 7 tools, same names as 1.2.0 |
+| stdout purity (invariant #4) | 2/2 stdout lines valid JSON-RPC; fastmcp's banner and logs go to stderr only |
+| `tools/call list_models` | `is_error: False`, real model list from `mw` |
+| `smoke_test.py` live transcription | 7.91 s, 232 chars, *"… All those moments will be lost in time, like tears in rain. Time to die."* |
+
+**Surprise / fixed:** The first `smoke_test.py` run crashed *after* a successful `transcribe_audio` with `AttributeError: 'CallToolResult' object has no attribute 'isError'`. MCP SDK v2 renamed model fields to snake_case (`is_error`), as the FastMCP 4 release notes announce. The server was fine; the harness was fixed in the same release (`isError` → `is_error`).
+
+---
+
 ### 2026-08-17 — fastmcp 3.4.7 upgrade validation (stdio handshake, no transcription)
 
 **Exercised:** MCP `initialize` + `notifications/initialized` + `tools/list` over real stdio against `python -m macwhisper_mcp.server` run as a subprocess. Handshake only — no `tools/call`, so no audio and no `mw` invocation. Gate for the `fastmcp` pin bump `3.4.6` → `3.4.7` under invariant #5.

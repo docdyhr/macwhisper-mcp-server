@@ -9,6 +9,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.2.1] — 2026-10-14
+
+Maintenance release. No functional change to the server: the 7 MCP tools,
+their schemas, and all six security invariants are identical to 1.2.0.
+
 ### Changed
 - Pinned `fastmcp` bumped `3.4.6` → `3.4.7`. Upstream release is a single
   security fix to CIMD `private_key_jwt` assertion audience validation for
@@ -16,6 +23,28 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no-network path. Validated per invariant #5: full suite green (96 tests)
   and a live stdio `initialize` + `tools/list` handshake identical to 3.4.6
   on both versions. See `docs/live-tests.md` (2026-08-17).
+- Pinned `fastmcp` bumped `3.4.7` → `4.0.10` → `4.1.0` (FastMCP 4, built on
+  MCP Python SDK v2). None of its breaking changes touch this server, which
+  uses only `FastMCP(...)` and plain `@mcp.tool()` (no sampling, roots,
+  elicitation or deprecated 3.x APIs). Validated per invariant #5: 96 tests,
+  a live stdio handshake for both a 2025-06-18 client (stdout pure JSON-RPC)
+  and a current-SDK client (negotiates 2025-11-25), a real `list_models`
+  round-trip and a live transcription through `mw`. See `docs/live-tests.md`
+  (2026-10-14).
+
+### Fixed
+- `scripts/smoke_test.py` read `CallToolResult.isError`, which MCP SDK v2
+  renamed to `is_error`, so the harness crashed after a successful call.
+
+### Documentation
+- Synced the `fastmcp` pin references in `CLAUDE.md` and `PRD.md` (`3.4.7`
+  and then `4.1.0`).
+- New `docs/live-tests.md` entry (2026-10-14) recording the FastMCP 4
+  validation run.
+
+### Security
+- `github/codeql-action` bumped `4.37.4` → `4.38.3` (CI only, not shipped
+  in the package).
 
 ---
 
