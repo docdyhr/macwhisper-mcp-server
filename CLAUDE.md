@@ -6,12 +6,12 @@ Context for Claude Code working on this repo. Read this first.
 
 A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) transcription to Claude Desktop. Audio → MacWhisper → MCP → Claude. Fully local, fully private. An optional `whisper-cpp` engine is also available (`engine="whisper-cpp"`) that bypasses MacWhisper entirely — see PRD §3/§8. See [PRD.md](./PRD.md) for the full spec and [TODO.md](./TODO.md) for the roadmap.
 
-## Current status (2026-08-11)
+## Current status (2026-10-14)
 
-**v1.2.0 — 7 MCP tools, 96 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
+**v1.2.1 — 7 MCP tools, 96 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
-- Python 3.13.13 venv at `.venv/` with `fastmcp==3.4.7`
+- Python 3.13.13 venv at `.venv/` with `fastmcp==4.1.0`
 - Package imports cleanly (`macwhisper_mcp.{config,transcribe,server,watcher}`)
 - MacWhisper 14.6 (1472) installed via `brew install --cask macwhisper` (was 13.20/1410 — corrected 2026-08-11; `mw`'s CLI has grown `--language`, `--format json/srt/vtt/...`, `--timestamps`, `--speakers` since the last PRD investigation, see PRD §11)
 - CLI at `/usr/local/bin/mw` (symlink → `/Applications/MacWhisper.app/Contents/MacOS/mw`); `mw` is on PATH. `config.py` auto-detects the app-bundle path and uses it directly.
@@ -66,7 +66,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 2. **Path allow-list with symlink resolution.** `Config.is_path_allowed` calls `Path.resolve(strict=True)` before the prefix check, so a symlink inside an allowed dir pointing outside is rejected. Test: `test_is_path_allowed_rejects_symlink_escape`.
 3. **File-extension allow-list.** Only audio/video extensions in `ALLOWED_EXTENSIONS` reach the CLI.
 4. **Logs go to a file, never stdout.** Stdout is reserved for MCP JSON-RPC. `server._setup_logging` uses `logging.basicConfig(filename=...)`. Never add `print()` to the server path.
-5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==3.4.7`.
+5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==4.1.0`.
 6. **whisper-cpp model paths must resolve inside `MACWHISPER_WHISPERCPP_MODEL_DIR`.** `Config.resolve_whispercpp_model` uses the same `resolve(strict=True)` + prefix-check pattern as invariant #2 — never accept a raw/absolute path for the `model` argument when `engine="whisper-cpp"`. Test: `test_resolve_whispercpp_model_rejects_symlink_escape`, `test_resolve_whispercpp_model_rejects_traversal`.
 
 ## Known quirks
@@ -74,7 +74,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 - `mw` is on PATH at `/usr/local/bin/mw` (symlink → app bundle) when the CLI is installed via MacWhisper → Settings → Advanced → Install. `config.py` prefers the explicit app-bundle path; `MACWHISPER_CLI=mw` also works now. When MacWhisper is upgraded via `brew upgrade --cask macwhisper`, the symlink stays valid — no re-install needed.
 - `mw transcribe <file>` prints the full transcript to stdout when `--stream` is not passed. We rely on this; do not add `--stream` without rewriting the stdout handling in `transcribe.py`.
 - `mw models list` output is space-padded tabular text (not JSON). `list_models()` in `server.py` parses it with `re.split(r"\s{2,}", ...)`.
-- `FastMCP("macwhisper")` reports fastmcp's own version in `serverInfo`, not our package version — currently `3.4.7`, tracking whatever `fastmcp` is pinned to. Cosmetic only — fix by passing `version=__version__` when we care about it.
+- `FastMCP("macwhisper")` reports fastmcp's own version in `serverInfo`, not our package version — currently `4.1.0`, tracking whatever `fastmcp` is pinned to. Cosmetic only — fix by passing `version=__version__` when we care about it.
 - CI runs on `macos-latest` only — Linux runners don't have MacWhisper anyway, and mocks cover the subprocess layer.
 - **whisper-cli (whisper.cpp) requires `-nt` for plain text.** Verified live against whisper-cli 1.9.2: without `-nt` every line is prefixed with `[00:00:00.000 --> 00:00:07.960]`; `_run_whispercpp` always passes `-np -nt`. Its noisy Metal/GGML init logs go to stderr, never stdout — confirmed by isolating each stream, same clean separation as `mw`.
 - **whisper-cli's own default language is English (`en`), not auto-detect.** Unlike MacWhisper (which defers to the app's own selection when `--language` is omitted), whisper-cli defaults to `en` per its `--help`. Only relevant when neither an explicit `language` argument nor a `MACWHISPER_LANGUAGE_DEFAULTS` match applies.
