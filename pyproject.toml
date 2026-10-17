@@ -43,7 +43,7 @@ where = ["src"]
 
 [tool.ruff]
 # Vendored agent skills (github/awesome-copilot) are not project code
-extend-exclude = [".github/skills"]
+extend-exclude = [".claude/skills"]
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
