@@ -1,3 +1,6 @@
+# Vendored third-party agent skills stay byte-identical to upstream (see .claude/skills/README.md)
+exclude: '^\.claude/skills/(?!README\.md$)'
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
