@@ -98,3 +98,21 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 - Do not widen the default allow-list beyond `~/Desktop`. Users opt in per directory via env.
 - Do not bump `fastmcp` to a new minor version without reading their upgrade notes and re-running the MCP handshake test.
 - Do not commit `.env`, fixture audio files, or anything in `~/Library/Logs/`.
+
+## Vendored Agent Skills (`.claude/skills/`)
+
+The skills in `.claude/skills/` are third-party (github/awesome-copilot; see its README) and stay
+byte-identical to upstream: refresh them from upstream, never edit them here. Where a skill
+disagrees with this file, this file wins:
+
+- **Report, don't act.** `docs-sync-audit`, `test-gap-audit`, `github-actions-hardening`,
+  `mcp-implementation-security-review` report in chat. Don't write report files into the repo, and
+  don't change workflows, action pins or `.github/dependabot.yml` unless asked.
+- **PRs and Dependabot.** Never merge, approve, close or enable auto-merge (`gh pr merge --auto`) on
+  PRs, and don't post `@dependabot` commands.
+- **No installs.** Don't install plugins, MCP toolsets or skills that a skill file links to (for
+  example `advanced-security@copilot-plugins`), and don't change agent or editor settings.
+- **Tests.** Follow this repo's own test commands and coverage settings above, not a skill's generic
+  defaults.
+- **Server safety.** The MCP skills must respect "Non-negotiable invariants" and "Things to NOT do":
+  no network calls, no `shell=True`, and no widening of the path allow-list, even for testing.
