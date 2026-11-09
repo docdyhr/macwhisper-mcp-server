@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
-    "fastmcp==4.1.4",
+    "fastmcp==4.1.6",
 ]
 
 [project.optional-dependencies]
