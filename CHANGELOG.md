@@ -13,9 +13,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Vendored agent skills**: `.claude/skills/` carries 7 skills from github/awesome-copilot at commit `cb64ad1` (`dependabot`, `docs-sync-audit`, `github-actions-hardening`, `mcp-implementation-security-review`, `mcp-release-qa`, `mcp-security-audit`, `test-gap-audit`), byte-identical to upstream with its MIT license, for Claude Code and GitHub Copilot. Repo rules take precedence over them (no PR merges or auto-merge, no installs, report-only audits).
 
+### Changed
+
+- Pinned `fastmcp` bumped `4.1.0` → `4.1.3` → `4.1.4` → `4.1.6` (Dependabot #37, #39, #41; patch releases within FastMCP 4.1). Validated on 4.1.6 with 98 tests and a live stdio handshake for both entry points. See `docs/live-tests.md` (2026-11-10).
+
 ### Fixed
 
 - **No more PyPI update check at startup.** `build_server()` now sets `fastmcp.settings.check_for_updates = "off"`. Before, FastMCP's startup banner asked `pypi.org` for a newer FastMCP whenever its 12-hour cache was stale, unless the client config set `FASTMCP_CHECK_FOR_UPDATES=off`. Every other launch broke the no-network-calls rule (PRD §7). The 1.1.1 entry below says the server set this itself, but no code ever did: only the README's Claude Desktop snippet and `.env.example` set it. Two regression tests cover it, one of them running FastMCP's real banner with every socket refused. See `docs/live-tests.md` (2026-11-10).
+
+### Security
+
+- The `fastmcp==4.1.0` pin in 1.2.1 is affected by [GHSA-7xgj-8392-5q4r](https://github.com/advisories/GHSA-7xgj-8392-5q4r) (post-transform component authorization skipped on direct calls) and [GHSA-vqqp-x5qm-5qp4](https://github.com/advisories/GHSA-vqqp-x5qm-5qp4) (M2M OAuth client wrappers without issuer binding). Both are moderate and fixed in 4.1.2. Neither code path is reachable from this server, which uses no auth providers, component transforms or FastMCP client wrappers. Still, every install of 1.2.1 pulls the affected version, and the `4.1.6` pin ships the fix.
 
 ---
 
