@@ -5,6 +5,10 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import dataclasses
+import json
+import os
+import subprocess
+import sys
 import threading
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -510,28 +514,62 @@ def test_build_server_turns_off_fastmcp_update_check(monkeypatch, config):
     assert fastmcp.settings.check_for_updates == "off"
 
 
-def test_startup_banner_opens_no_network_connection(monkeypatch, capsys, config, tmp_path):
-    """FastMCP's run() prints this banner before serving stdio: no socket may open."""
-    import socket
+_NO_NETWORK_STARTUP = """
+import atexit, json, os, socket, sys
 
-    import fastmcp
-    from fastmcp.utilities.cli import log_server_banner
+attempts = []
 
-    monkeypatch.setattr(fastmcp.settings, "check_for_updates", "stable")
-    # An empty private cache, so an enabled check would have to fetch from PyPI
-    # instead of reusing the machine-wide answer in FastMCP's home directory.
-    monkeypatch.setattr(fastmcp.settings, "home", tmp_path / "fastmcp-home")
-
-    attempts: list[str] = []
-
+def _refuse(name):
     def refuse(*args, **kwargs):
-        attempts.append(repr(args[:2]))
+        target = args[1] if name.startswith("connect") else args[:2]
+        attempts.append(f"{name} {target!r}")
         raise OSError("network access attempted during server startup")
+    return refuse
 
-    monkeypatch.setattr(socket, "getaddrinfo", refuse)
-    monkeypatch.setattr(socket.socket, "connect", refuse)
+socket.getaddrinfo = _refuse("getaddrinfo")
+socket.gethostbyname = _refuse("gethostbyname")
+socket.socket.connect = _refuse("connect")
+socket.socket.connect_ex = _refuse("connect_ex")
+atexit.register(lambda: open(os.environ["ATTEMPTS_FILE"], "w").write(json.dumps(attempts)))
 
-    log_server_banner(server=build_server(config))
+import macwhisper_mcp.server as server
 
-    assert attempts == []
-    assert "FastMCP" in capsys.readouterr().err  # the banner path really ran
+sys.stderr.write(f"MODULE {server.__file__}\\n")
+server.main()
+"""
+
+
+def test_server_startup_opens_no_network_connection(tmp_path):
+    """Launch the real entry point (main() -> run(), banner included) with every socket refused.
+
+    HOME is tmp_path, so FastMCP's version cache starts empty (an enabled check would
+    have to fetch) and the default log path stays inside it. stdin is at EOF, so the
+    stdio server exits as soon as startup is done.
+    """
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    attempts_file = tmp_path / "attempts.json"
+    src = Path(__file__).resolve().parents[1] / "src"
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("FASTMCP_", "MACWHISPER_"))}
+    env.update(
+        HOME=str(tmp_path),
+        MACWHISPER_ALLOWED_PATHS=str(allowed),
+        ATTEMPTS_FILE=str(attempts_file),
+        PYTHONPATH=os.pathsep.join(filter(None, [str(src), env.get("PYTHONPATH")])),
+    )
+
+    proc = subprocess.run(
+        [sys.executable, "-c", _NO_NETWORK_STARTUP],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=tmp_path,
+        timeout=60,
+    )
+
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    assert f"MODULE {src / 'macwhisper_mcp' / 'server.py'}" in proc.stderr  # this checkout
+    assert "FastMCP" in proc.stderr  # the startup banner really ran
+    assert proc.stdout == ""  # invariant 4: stdout carries JSON-RPC only
+    assert json.loads(attempts_file.read_text()) == []
