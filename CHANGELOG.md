@@ -19,7 +19,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- **No more PyPI update check at startup.** `build_server()` now sets `fastmcp.settings.check_for_updates = "off"`. Before, FastMCP's startup banner asked `pypi.org` for a newer FastMCP whenever its 12-hour cache was stale, unless the client config set `FASTMCP_CHECK_FOR_UPDATES=off`. Every other launch broke the no-network-calls rule (PRD §7). The 1.1.1 entry below says the server set this itself, but no code ever did: only the README's Claude Desktop snippet and `.env.example` set it. Two regression tests cover it, one of them running FastMCP's real banner with every socket refused. See `docs/live-tests.md` (2026-11-10).
+- **No more PyPI update check at startup.** `build_server()` now sets `fastmcp.settings.check_for_updates = "off"`. Before, FastMCP's startup banner asked `pypi.org` for a newer FastMCP whenever its 12-hour cache was stale, unless the client config set `FASTMCP_CHECK_FOR_UPDATES=off`. Every other launch broke the no-network-calls rule (PRD §7). The 1.1.1 entry below says the server set this itself, but no code ever did: only the README's Claude Desktop snippet and `.env.example` set it. Two regression tests cover it, one of them launching the real entry point (`main()`, banner included) with every socket refused. See `docs/live-tests.md` (2026-11-10).
 
 ### Security
 
@@ -122,6 +122,9 @@ their schemas, and all six security invariants are identical to 1.2.0.
 - Disabled FastMCP's built-in update-check nag on server startup
   (`FASTMCP_CHECK_FOR_UPDATES=off` is no longer required in the Claude Desktop
   config; the server sets it internally).
+  *Correction (2026-11-10): the server never set it. Only the README snippet and
+  `.env.example` did, so 1.1.1 through 1.2.1 still need
+  `FASTMCP_CHECK_FOR_UPDATES=off` in the client config. See [Unreleased] → Fixed.*
 - CodeQL CI workflow now triggers on the correct branch (`main`).
 
 ### Documentation

@@ -11,6 +11,7 @@ Format: `### YYYY-MM-DD — title`.
 **Exercised:** `initialize` + `tools/list` over real stdio with a current-SDK `ClientSession`. Handshake only: no `tools/call`, so no audio and no `mw` invocation. Two runs:
 1. Before the fix, on `main` @ 180a0f0, against `.venv/bin/macwhisper-mcp`. The client env carried only `MACWHISPER_ALLOWED_PATHS`, with no `FASTMCP_CHECK_FOR_UPDATES`, like a client config without the README snippet's env line.
 2. After the fix, on branch `fix/no-fastmcp-update-check`, against both entry points: `.venv/bin/macwhisper-mcp` and `python -m macwhisper_mcp.server`. Each server got an empty private `FASTMCP_HOME`, so FastMCP's machine-wide version cache could not stand in for a fetch. The control was FastMCP's own banner (`log_server_banner` on a bare `FastMCP("ctl")`, default settings), with another empty `FASTMCP_HOME`.
+3. The harness behind `test_server_startup_opens_no_network_connection`: the real `main()` → `run()` with stdin at EOF, `HOME` set to an empty directory, and `socket.getaddrinfo` / `gethostbyname` / `connect` / `connect_ex` replaced by recorders that refuse. It was run once on the fixed code and once with the fix undone right after `build_server()` (the control).
 
 **Environment:** Python 3.13.13. The repo venv at `.venv/` was re-synced with `pip install -r requirements-dev.txt -e .`; it still held `fastmcp 4.1.0` from the v1.2.1 validation and now has `fastmcp 4.1.6`, `fastmcp-slim 4.1.6`, `mcp 2.3.0` (`pip check` clean). Default `MACWHISPER_LOG_PATH` under `~/Library/Logs/`.
 
@@ -23,6 +24,7 @@ Format: `### YYYY-MM-DD — title`.
 | Control: FastMCP defaults, empty home | wrote `version_cache.json` and printed the update notice: one real GET to pypi.org, so the probe does see an enabled check |
 | Run 2, console script: handshake / banner / update notice / cache file | `macwhisper 4.1.6`, 7 tools / printed / none / none |
 | Run 2, `python -m`: same checks | `macwhisper 4.1.6`, 7 tools / printed / none / none |
+| Run 3: fixed / control | exit 0, banner printed, empty stdout, 0 attempts / exit 0, banner printed, `getaddrinfo` attempt recorded |
 | `pytest -q` after the fix | 98 passed (96 + 2 regression tests) |
 
 **What it proves:** FastMCP's default `check_for_updates="stable"` made the server's startup banner query PyPI whenever the shared cache was older than 12 h. That is a network call from the server process, against PRD §7. The 1.1.1 fix (4dbd9fc) put `FASTMCP_CHECK_FOR_UPDATES=off` only in the README's Claude Desktop snippet and `.env.example`. No commit ever set it in code, although the 1.1.1 changelog entry says the server does. `build_server()` now sets `fastmcp.settings.check_for_updates = "off"`.

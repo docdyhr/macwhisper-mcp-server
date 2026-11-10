@@ -105,6 +105,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add:
 
 Restart Claude Desktop.
 
+`FASTMCP_CHECK_FOR_UPDATES=off` stops FastMCP from asking PyPI for a newer FastMCP at startup. Releases after 1.2.1 turn it off in code. Keep the line for 1.2.1 and earlier.
+
 > **Note:** Audio files must be saved to your Mac's filesystem (Desktop, Downloads, or another allow-listed folder) before asking Claude to transcribe them. Files uploaded directly to the Claude chat window live in Claude's container and are not accessible to the local MacWhisper CLI.
 
 ### Verify it works
