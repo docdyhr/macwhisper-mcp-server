@@ -542,9 +542,9 @@ server.main()
 def test_server_startup_opens_no_network_connection(tmp_path):
     """Launch the real entry point (main() -> run(), banner included) with every socket refused.
 
-    HOME is tmp_path, so FastMCP's version cache starts empty (an enabled check would
-    have to fetch) and the default log path stays inside it. stdin is at EOF, so the
-    stdio server exits as soon as startup is done.
+    FASTMCP_HOME is an empty directory, so FastMCP's version cache starts empty (an
+    enabled check would have to fetch), and HOME is tmp_path, so the default log path
+    stays inside it. stdin is at EOF, so the stdio server exits once startup is done.
     """
     allowed = tmp_path / "allowed"
     allowed.mkdir()
@@ -553,6 +553,7 @@ def test_server_startup_opens_no_network_connection(tmp_path):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("FASTMCP_", "MACWHISPER_"))}
     env.update(
         HOME=str(tmp_path),
+        FASTMCP_HOME=str(tmp_path / "fastmcp-home"),
         MACWHISPER_ALLOWED_PATHS=str(allowed),
         ATTEMPTS_FILE=str(attempts_file),
         PYTHONPATH=os.pathsep.join(filter(None, [str(src), env.get("PYTHONPATH")])),
