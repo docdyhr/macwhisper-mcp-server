@@ -5,6 +5,10 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import dataclasses
+import json
+import os
+import subprocess
+import sys
 import threading
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -489,3 +493,84 @@ def test_start_watch_accepts_configured_done_dir_inside_allow_list(tmp_path):
         assert "Watching" in result.data
     finally:
         _call(mcp, "stop_watch", {})
+
+
+# --- PRD §7: no network calls from the server process ---
+
+
+def test_build_server_turns_off_fastmcp_update_check(monkeypatch, config):
+    """FastMCP's startup banner asks PyPI for a newer FastMCP unless told not to.
+
+    Regression: v1.1.1 (4dbd9fc) set FASTMCP_CHECK_FOR_UPDATES=off only in the
+    README's Claude Desktop snippet, so any launch without that env var still
+    made the call. Start from FastMCP's own default, as such a launch sees it.
+    """
+    import fastmcp
+
+    monkeypatch.setattr(fastmcp.settings, "check_for_updates", "stable")
+
+    build_server(config)
+
+    assert fastmcp.settings.check_for_updates == "off"
+
+
+_NO_NETWORK_STARTUP = """
+import atexit, json, os, socket, sys
+
+attempts = []
+
+def _refuse(name):
+    def refuse(*args, **kwargs):
+        target = args[1] if name.startswith("connect") else args[:2]
+        attempts.append(f"{name} {target!r}")
+        raise OSError("network access attempted during server startup")
+    return refuse
+
+socket.getaddrinfo = _refuse("getaddrinfo")
+socket.gethostbyname = _refuse("gethostbyname")
+socket.socket.connect = _refuse("connect")
+socket.socket.connect_ex = _refuse("connect_ex")
+atexit.register(lambda: open(os.environ["ATTEMPTS_FILE"], "w").write(json.dumps(attempts)))
+
+import macwhisper_mcp.server as server
+
+sys.stderr.write(f"MODULE {server.__file__}\\n")
+server.main()
+"""
+
+
+def test_server_startup_opens_no_network_connection(tmp_path):
+    """Launch the real entry point (main() -> run(), banner included) with every socket refused.
+
+    FASTMCP_HOME is an empty directory, so FastMCP's version cache starts empty (an
+    enabled check would have to fetch), and HOME is tmp_path, so the default log path
+    stays inside it. stdin is at EOF, so the stdio server exits once startup is done.
+    """
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    attempts_file = tmp_path / "attempts.json"
+    src = Path(__file__).resolve().parents[1] / "src"
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("FASTMCP_", "MACWHISPER_"))}
+    env.update(
+        HOME=str(tmp_path),
+        FASTMCP_HOME=str(tmp_path / "fastmcp-home"),
+        MACWHISPER_ALLOWED_PATHS=str(allowed),
+        ATTEMPTS_FILE=str(attempts_file),
+        PYTHONPATH=os.pathsep.join(filter(None, [str(src), env.get("PYTHONPATH")])),
+    )
+
+    proc = subprocess.run(
+        [sys.executable, "-c", _NO_NETWORK_STARTUP],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=tmp_path,
+        timeout=60,
+    )
+
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    assert f"MODULE {src / 'macwhisper_mcp' / 'server.py'}" in proc.stderr  # this checkout
+    assert "FastMCP" in proc.stderr  # the startup banner really ran
+    assert proc.stdout == ""  # invariant 4: stdout carries JSON-RPC only
+    assert json.loads(attempts_file.read_text()) == []

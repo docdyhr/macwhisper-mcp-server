@@ -69,7 +69,7 @@ Secondary: other macOS MacWhisper licensees who use Claude Desktop and want a pr
 
 ## 7. Non-functional requirements
 
-- **Privacy:** all processing local; no network calls from the server itself.
+- **Privacy:** all processing local; no network calls from the server itself. That includes FastMCP's startup update check (a GET to pypi.org from its banner), which `build_server()` switches off in code.
 - **Security:** no shell injection (never pass user input through a shell; always use `subprocess.run` with a list argv). Path traversal blocked via `Path.resolve()` + prefix check.
 - **Performance:** server startup < 1s. Transcription time is bounded by MacWhisper itself.
 - **Reliability:** server should not crash on bad input — all errors caught and returned as MCP tool errors.
@@ -97,7 +97,7 @@ validation in `transcribe.py`, which applies to both engines identically.
 
 **Stack:**
 - Python 3.13.13 (managed by pyenv)
-- `fastmcp==4.1.0` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
+- `fastmcp==4.1.6` (pinned; FastMCP uses semver with breaking changes possible in minor releases)
 - stdlib only for everything else (`subprocess`, `pathlib`, `os`)
 - Optional: `whisper-cpp` (Homebrew formula `whisper-cpp`, binary `whisper-cli`) for the
   whisper-cpp engine — not a Python dependency, invoked as an external CLI like `mw`
