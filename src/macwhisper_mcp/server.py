@@ -12,6 +12,7 @@ import subprocess
 import threading
 from pathlib import Path
 
+import fastmcp
 from fastmcp import FastMCP
 
 from .config import Config
@@ -33,6 +34,11 @@ def build_server(config: Config | None = None, _proc_state: list | None = None) 
     _setup_logging(config)
     log = logging.getLogger(__name__)
     log.info("Starting macwhisper-mcp-server, allow-list=%s", config.allowed_paths)
+
+    # PRD §7: the server process makes no network calls. FastMCP's startup banner
+    # otherwise asks pypi.org for a newer FastMCP whenever its 12 h cache is stale.
+    # Set here, not only in a client's env, so every launch path is covered.
+    fastmcp.settings.check_for_updates = "off"
 
     mcp = FastMCP("macwhisper")
 

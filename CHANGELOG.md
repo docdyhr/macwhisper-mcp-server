@@ -13,6 +13,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Vendored agent skills**: `.claude/skills/` carries 7 skills from github/awesome-copilot at commit `cb64ad1` (`dependabot`, `docs-sync-audit`, `github-actions-hardening`, `mcp-implementation-security-review`, `mcp-release-qa`, `mcp-security-audit`, `test-gap-audit`), byte-identical to upstream with its MIT license, for Claude Code and GitHub Copilot. Repo rules take precedence over them (no PR merges or auto-merge, no installs, report-only audits).
 
+### Fixed
+
+- **No more PyPI update check at startup.** `build_server()` now sets `fastmcp.settings.check_for_updates = "off"`. Before, FastMCP's startup banner asked `pypi.org` for a newer FastMCP whenever its 12-hour cache was stale, unless the client config set `FASTMCP_CHECK_FOR_UPDATES=off`. Every other launch broke the no-network-calls rule (PRD §7). The 1.1.1 entry below says the server set this itself, but no code ever did: only the README's Claude Desktop snippet and `.env.example` set it. Two regression tests cover it, one of them running FastMCP's real banner with every socket refused. See `docs/live-tests.md` (2026-11-10).
+
 ---
 
 ## [1.2.1] — 2026-10-14

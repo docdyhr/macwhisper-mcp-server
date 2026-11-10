@@ -489,3 +489,49 @@ def test_start_watch_accepts_configured_done_dir_inside_allow_list(tmp_path):
         assert "Watching" in result.data
     finally:
         _call(mcp, "stop_watch", {})
+
+
+# --- PRD §7: no network calls from the server process ---
+
+
+def test_build_server_turns_off_fastmcp_update_check(monkeypatch, config):
+    """FastMCP's startup banner asks PyPI for a newer FastMCP unless told not to.
+
+    Regression: v1.1.1 (4dbd9fc) set FASTMCP_CHECK_FOR_UPDATES=off only in the
+    README's Claude Desktop snippet, so any launch without that env var still
+    made the call. Start from FastMCP's own default, as such a launch sees it.
+    """
+    import fastmcp
+
+    monkeypatch.setattr(fastmcp.settings, "check_for_updates", "stable")
+
+    build_server(config)
+
+    assert fastmcp.settings.check_for_updates == "off"
+
+
+def test_startup_banner_opens_no_network_connection(monkeypatch, capsys, config, tmp_path):
+    """FastMCP's run() prints this banner before serving stdio: no socket may open."""
+    import socket
+
+    import fastmcp
+    from fastmcp.utilities.cli import log_server_banner
+
+    monkeypatch.setattr(fastmcp.settings, "check_for_updates", "stable")
+    # An empty private cache, so an enabled check would have to fetch from PyPI
+    # instead of reusing the machine-wide answer in FastMCP's home directory.
+    monkeypatch.setattr(fastmcp.settings, "home", tmp_path / "fastmcp-home")
+
+    attempts: list[str] = []
+
+    def refuse(*args, **kwargs):
+        attempts.append(repr(args[:2]))
+        raise OSError("network access attempted during server startup")
+
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+
+    log_server_banner(server=build_server(config))
+
+    assert attempts == []
+    assert "FastMCP" in capsys.readouterr().err  # the banner path really ran
