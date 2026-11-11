@@ -6,9 +6,9 @@ Context for Claude Code working on this repo. Read this first.
 
 A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper) transcription to Claude Desktop. Audio → MacWhisper → MCP → Claude. Fully local, fully private. An optional `whisper-cpp` engine is also available (`engine="whisper-cpp"`) that bypasses MacWhisper entirely — see PRD §3/§8. See [PRD.md](./PRD.md) for the full spec and [TODO.md](./TODO.md) for the roadmap.
 
-## Current status (2026-11-10)
+## Current status (2026-11-11)
 
-**v1.2.1 released; `main` at 1.2.2.dev0 — 7 MCP tools, 98 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
+**v1.2.1 released; `main` at 1.2.2.dev0 — 7 MCP tools, 101 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/` with `fastmcp==4.1.6`
@@ -17,7 +17,7 @@ Verified working:
 - CLI at `/usr/local/bin/mw` (symlink → `/Applications/MacWhisper.app/Contents/MacOS/mw`); `mw` is on PATH. `config.py` auto-detects the app-bundle path and uses it directly.
 - MCP `initialize` + `tools/list` handshake works over stdio.
 - **Live transcription round-trip confirmed** via synthetic MCP client — 13.6s on a short Danish clip, UTF-8 clean. See [`docs/live-tests.md`](./docs/live-tests.md).
-- 98/98 tests pass (`pytest -q`)
+- 101/101 tests pass (`pytest -q`)
 - CI green on every push (GitHub Actions, `macos-latest`, Python 3.13)
 - CodeQL SAST scan enabled and clean
 - Published: PyPI (`pip install macwhisper-mcp-server`) and MCP Registry (`io.github.docdyhr/macwhisper-mcp-server`)
@@ -55,7 +55,8 @@ tests/
 ├── test_transcribe.py   # transcribe() unit tests (MacWhisper path), Popen mocked
 ├── test_engines.py      # whisper-cpp engine unit tests, Popen mocked
 ├── test_watcher.py      # FolderWatcher tests, subprocess.run mocked
-└── test_server.py       # MCP tool layer tests via FastMCP Client
+├── test_server.py       # MCP tool layer tests via FastMCP Client
+└── test_tool_pin_parity.py  # Exact pins agree: ruff (3 sites), fastmcp (2 sites)
 ```
 
 ## Non-negotiable invariants
@@ -66,7 +67,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 2. **Path allow-list with symlink resolution.** `Config.is_path_allowed` calls `Path.resolve(strict=True)` before the prefix check, so a symlink inside an allowed dir pointing outside is rejected. Test: `test_is_path_allowed_rejects_symlink_escape`.
 3. **File-extension allow-list.** Only audio/video extensions in `ALLOWED_EXTENSIONS` reach the CLI.
 4. **Logs go to a file, never stdout.** Stdout is reserved for MCP JSON-RPC. `server._setup_logging` uses `logging.basicConfig(filename=...)`. Never add `print()` to the server path.
-5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==4.1.6`.
+5. **Pin `fastmcp` exactly.** FastMCP uses semver with breaking changes possible in minor releases. `requirements.txt` and `pyproject.toml` both pin `==4.1.6`. Test: `test_fastmcp_pinned_identically_in_every_site`.
 6. **whisper-cpp model paths must resolve inside `MACWHISPER_WHISPERCPP_MODEL_DIR`.** `Config.resolve_whispercpp_model` uses the same `resolve(strict=True)` + prefix-check pattern as invariant #2 — never accept a raw/absolute path for the `model` argument when `engine="whisper-cpp"`. Test: `test_resolve_whispercpp_model_rejects_symlink_escape`, `test_resolve_whispercpp_model_rejects_traversal`.
 7. **No network calls from the server process, including FastMCP's own.** FastMCP's startup banner asks pypi.org for a newer FastMCP unless `check_for_updates` is off, so `build_server()` sets `fastmcp.settings.check_for_updates = "off"` itself. Never rely on a client config's `FASTMCP_CHECK_FOR_UPDATES` env var. Tests: `test_build_server_turns_off_fastmcp_update_check`, `test_server_startup_opens_no_network_connection` (launches the real entry point with every socket refused). They are the check to re-read on every `fastmcp` bump.
 
@@ -86,6 +87,7 @@ These are load-bearing for security. Do not loosen them without updating the PRD
 
 - Formatting: `ruff format` (line length 100, target `py313`)
 - Linting: `ruff check` with `E, F, W, I, B, UP, SIM, RUF`
+- ruff is pinned exactly in `requirements-dev.txt`, the `dev` extra and the pre-commit hook `rev:`. `tests/test_tool_pin_parity.py` fails until all three move together, so when Dependabot bumps ruff, move the hook `rev:` in the same PR.
 - Tests: `pytest` with `pytest-mock`. Mock `subprocess.Popen` at `macwhisper_mcp.engines.subprocess.Popen` (both MacWhisper and whisper-cpp engines run through `engines.py` since the v1.2 split — `transcribe.py` no longer calls `Popen` directly) and `subprocess.run` at `macwhisper_mcp.server.subprocess.run` / `macwhisper_mcp.watcher.subprocess.run` — always at the module that uses it, never at stdlib level. Module-level constants imported via `from .config import X` are a *separate* binding per importing module (Python copies the name, not a shared reference) — e.g. `MAX_OUTPUT_BYTES` must be patched at `macwhisper_mcp.engines.MAX_OUTPUT_BYTES`, patching it on `transcribe` has no effect since that module doesn't read it anymore.
 - Commit style: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`).
 - When adding an MCP tool: define it inside `build_server()` so it closes over `config`. Always wrap user-facing errors in `TranscribeError` (or a new domain exception) — raw stdlib exceptions leak implementation details.

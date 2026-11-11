@@ -16,6 +16,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Pinned `fastmcp` bumped `4.1.0` → `4.1.3` → `4.1.4` → `4.1.6` (Dependabot #37, #39, #41; patch releases within FastMCP 4.1). Validated on 4.1.6 with 98 tests and a live stdio handshake for both entry points. See `docs/live-tests.md` (2026-11-10).
+- Dev tooling: `ruff` is now pinned exactly (`==0.17.4`) in `requirements-dev.txt` and the `dev` extra, and the ruff-pre-commit hook moves from `v0.15.12` to `v0.17.4`. Before, CI installed the newest ruff (`ruff>=0.6`) while pre-commit and local venvs ran 0.15.12. The 0.17 hook also formats Python code blocks in Markdown, which CI's `ruff format --check .` already checked. The new `tests/test_tool_pin_parity.py` fails when one ruff pin site moves without the others (Dependabot's pip updater never bumps the hook `rev:`, and this repo configures no pre-commit ecosystem). It also fails when `requirements.txt` and `pyproject.toml` pin different `fastmcp` versions (invariant 5).
 
 ### Fixed
 
