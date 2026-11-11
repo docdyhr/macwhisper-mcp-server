@@ -3,8 +3,9 @@
 Dependabot's pip updater moves `requirements*.txt` and `pyproject.toml`, but never the
 ruff-pre-commit hook `rev:` (this repo has no pre-commit ecosystem configured), so a
 ruff bump PR fails here until the hook moves too. Each helper asserts it found exactly
-one concrete pin, so a site that is renamed, duplicated or loosened to a range or
-wildcard fails loudly instead of dropping out of the comparison.
+one concrete pin, so a site that is renamed, duplicated, loosened to a range or wildcard,
+switched off by an environment marker, or given a version pip cannot parse fails loudly
+instead of dropping out of the comparison.
 """
 
 from __future__ import annotations
@@ -13,17 +14,20 @@ import re
 import tomllib
 from pathlib import Path
 
+from packaging.version import InvalidVersion, Version  # pytest itself depends on packaging
+
 ROOT = Path(__file__).resolve().parents[1]
 RUFF_HOOK_REPO = "https://github.com/astral-sh/ruff-pre-commit"
 
-# A concrete PEP 440 version after `==`: no wildcard, no `===`, then only an optional
-# environment marker or comment.
+# A concrete version after `==`: no wildcard and no `===`. No environment marker either,
+# because a marker can switch the pin off on the project's Python. Only a trailing comment
+# may follow. `_assert_pep440` then checks that the version parses.
 _VERSION = r"([0-9][0-9A-Za-z.+!_-]*)"
 
 
 def _exact_pin(requirements: list[str], name: str) -> str:
     """Return the version `name` is pinned to with `==`; fail unless exactly one such pin."""
-    pattern = re.compile(rf"^{re.escape(name)}\s*==\s*{_VERSION}\s*(?:[;#].*)?$", re.IGNORECASE)
+    pattern = re.compile(rf"^{re.escape(name)}\s*==\s*{_VERSION}\s*(?:#.*)?$", re.IGNORECASE)
     hits = [m.group(1) for line in requirements if (m := pattern.match(line.strip()))]
     assert len(hits) == 1, (
         f"expected one exact '{name}==<version>' pin, found {hits} in {requirements}"
@@ -60,6 +64,14 @@ def _precommit_revs(config_text: str, repo_url: str) -> list[str]:
     return revs
 
 
+def _assert_pep440(sites: dict[str, str]) -> None:
+    for where, version in sites.items():
+        try:
+            Version(version)
+        except InvalidVersion:
+            raise AssertionError(f"{where}: {version!r} is not a PEP 440 version") from None
+
+
 def _precommit_rev(repo_url: str) -> str:
     text = (ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
     revs = _precommit_revs(text, repo_url)
@@ -77,6 +89,7 @@ def test_ruff_pinned_identically_in_every_site():
         ),
         ".pre-commit-config.yaml ruff-pre-commit rev": _precommit_rev(RUFF_HOOK_REPO),
     }
+    _assert_pep440(sites)
     assert len(set(sites.values())) == 1, f"ruff pins disagree: {sites}"
 
 
@@ -88,19 +101,29 @@ def test_fastmcp_pinned_identically_in_every_site():
             _pyproject()["project"]["dependencies"], "fastmcp"
         ),
     }
+    _assert_pep440(sites)
     assert len(set(sites.values())) == 1, f"fastmcp pins disagree: {sites}"
 
 
 def test_pin_helpers_on_synthetic_inputs():
     """The helpers' own contract, independent of the live files."""
     assert _exact_pin(["ruff==0.17.4"], "ruff") == "0.17.4"
-    assert _exact_pin(['ruff == 0.17.4 ; python_version >= "3.13"'], "ruff") == "0.17.4"
-    for loose in (["ruff==0.17.*"], ["ruff===0.17.4"], ["ruff>=0.17"], ["ruff-lsp==0.1.0"]):
+    assert _exact_pin(["ruff == 0.17.4  # keep in step with pre-commit"], "ruff") == "0.17.4"
+    marker = ['ruff==0.17.4 ; python_version < "3.13"']  # would install nothing on 3.13
+    for loose in (["ruff==0.17.*"], ["ruff===0.17.4"], ["ruff>=0.17"], ["ruff-lsp==0.1.0"], marker):
         try:
             _exact_pin(loose, "ruff")
         except AssertionError:
             continue
         raise AssertionError(f"{loose} was accepted as an exact ruff pin")
+
+    _assert_pep440({"site": "0.17.4", "other": "2026.9.1"})
+    for malformed in ("0..17", "0.17.4-junk-x", "0.17.4_"):
+        try:
+            _assert_pep440({"site": malformed})
+        except AssertionError:
+            continue
+        raise AssertionError(f"{malformed!r} was accepted as a PEP 440 version")
 
     url = RUFF_HOOK_REPO
     plain = f"repos:\n  - repo: {url}\n    rev: v0.17.4\n    hooks:\n      - id: ruff\n"
