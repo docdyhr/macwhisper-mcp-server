@@ -1,1 +1,1 @@
-fastmcp==4.1.6
+fastmcp==4.1.8
