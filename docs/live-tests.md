@@ -6,6 +6,30 @@ Format: `### YYYY-MM-DD — title`.
 
 ---
 
+### 2026-11-24 — fastmcp 4.1.8 (main) and 4.2.3 (Dependabot PR #47) stdio handshake (no transcription)
+
+**Exercised:** The invariant #5 and #7 gate for two pins. One was `4.1.8`, already on `main` @ fb7e0d4 since Dependabot #45 merged without a live run. The other was `4.2.3`, a minor bump on PR #47's head (c95ff4c). For each, `initialize` + `tools/list` ran over real stdio with an MCP SDK v2 `ClientSession`, against both entry points (`macwhisper-mcp` console script and `python -m macwhisper_mcp.server`). Handshake only: no `tools/call`, no audio, no `mw` invocation. Each server got an empty private `FASTMCP_HOME`, and its env carried only `PATH`, `HOME`, `FASTMCP_HOME` and `MACWHISPER_ALLOWED_PATHS=~/Desktop`. No control run with the update check enabled this time: the 2026-11-10 entry established that the probe sees one, and `test_server_startup_opens_no_network_connection` (sockets refused, real `main()`) is in the suite below.
+
+**Environment:** Python 3.13.13. Two fresh throwaway venvs, built with `uv pip install -r requirements.txt -r requirements-dev.txt -e .` from detached checkouts of each commit, not the repo `.venv/` (which still holds `fastmcp 4.1.6`). The 4.1.8 set had `fastmcp 4.1.8` and `mcp 2.3.0`; the 4.2.3 set had `fastmcp 4.2.3` and `mcp 2.3.0`. `uv pip check` was clean on both. Default `MACWHISPER_LOG_PATH` under `~/Library/Logs/`.
+
+**Result:** ✅ on both pins.
+
+| Check | 4.1.8 (`main`) | 4.2.3 (PR #47) |
+|---|---|---|
+| `pytest -q` | 101 passed | 101 passed |
+| `ruff check .` / `ruff format --check .` | — | clean / 23 files already formatted |
+| Console script: `protocolVersion` / `serverInfo` / tools | `2025-11-25` / `macwhisper 4.1.8` / 7 | `2025-11-25` / `macwhisper 4.2.3` / 7 |
+| `python -m`: same | `2025-11-25` / `macwhisper 4.1.8` / 7 | `2025-11-25` / `macwhisper 4.2.3` / 7 |
+| Update notice on stderr / files written under `FASTMCP_HOME` | none / none | none / none |
+
+All four runs listed the same 7 tools: `cancel_transcription`, `get_watch_results`, `list_allowed_paths`, `list_models`, `start_watch`, `stop_watch`, `transcribe_audio`.
+
+**What it proves:** Both pins keep the MCP surface and the no-network startup. FastMCP 4.2's breaking changes do not touch this server: it imports only `FastMCP` and `fastmcp.settings`, and uses neither the reworked Skill API nor `Depends`. The 4.2 Python floor (3.11) sits below this project's `>=3.13,<3.14`. 4.2.0 to 4.2.3 otherwise change OAuth, OpenAPI, proxy, skills and task code that a stdio-only server without auth does not reach.
+
+**Not covered:** No `tools/call` and no live transcription on either pin. `list_models` and `transcribe_audio` go through mocked `Popen` in the suite only.
+
+---
+
 ### 2026-11-10 — FastMCP startup update check found and switched off (stdio handshake, no transcription)
 
 **Exercised:** `initialize` + `tools/list` over real stdio with a current-SDK `ClientSession`. Handshake only: no `tools/call`, so no audio and no `mw` invocation. Two runs:
