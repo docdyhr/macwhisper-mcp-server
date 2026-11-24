@@ -8,7 +8,7 @@ A local MCP server that exposes [MacWhisper](https://goodsnooze.gumroad.com/l/ma
 
 ## Current status (2026-11-24)
 
-**v1.2.1 released; `main` at 1.2.2.dev0 — 7 MCP tools, 101 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
+**v1.2.2 released; `main` at 1.2.3.dev0 — 7 MCP tools, 101 tests green. Repo public. Published on PyPI, MCP Registry, and Homebrew tap (`docdyhr/tap`).**
 
 Verified working:
 - Python 3.13.13 venv at `.venv/`. Re-sync it after every pin bump (`pip install -r requirements-dev.txt -e .`): it should hold the `fastmcp` version `requirements.txt` pins
